@@ -1,22 +1,18 @@
 [Unit]
-Description=Kingshard DB Proxy Service
+Description=SMProxy Service
 After=network.target
 
 [Service]
-Environment="CONFIG=/usr/local/db/sm_test.yaml" "PIDFILE=/data/tmp_db/test/dbproxy.pid"
+Environment="CONFIG=/usr/local/db/sm_test.yaml" "PIDFILE=/data/tmp_db/test/smproxy_test.pid"
 WorkingDirectory=/usr/local/db/
-ExecStart=/usr/local/db/service_kingshard -config $CONFIG -log-path /data/tmp_db/test/service.log -log-level=debug -pidfile $PIDFILE
-#  -address /usr/local/db/proxy_unix_test.sock
-# ExecReload=/bin/kill -USR2 $MAINPID
-KillMode=mixed
-
-# StandardOutput=null
+ExecStart=/usr/local/db/service_sm_proxy -config $CONFIG -log-path /data/logs/smproxy_test.log -log-level=debug -pidfile $PIDFILE
 
 Restart=always
-RestartSec=15
 
 User=worker
 Group=worker
+LimitNOFILE=100000
+LimitNPROC=100000
 
 [Install]
 WantedBy=multi-user.target
