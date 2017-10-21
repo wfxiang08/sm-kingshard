@@ -28,7 +28,7 @@ func SetLogLevel(level string) {
 		lv = log.LEVEL_INFO
 	}
 	log.SetLevel(lv)
-	log.Infof("set log level to %s", lv)
+	log.Infof("set log level to %s", level)
 }
 
 //
