@@ -14,38 +14,36 @@
 package web
 
 import (
-	"time"
-
 	"config"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/engine"
 	"github.com/labstack/echo/engine/standard"
 	mw "github.com/labstack/echo/middleware"
-	"github.com/tylerb/graceful"
 	"github.com/wfxiang08/cyutils/utils/rolling_log"
+	"net"
+	"overseer"
 	"proxy/server"
-	"media_utils"
 )
 
 type ApiServer struct {
 	cfg         *config.Config
 	proxy       *server.Server
-	webAddr     string
 	webUser     string
 	webPassword string
 	*echo.Echo
+	listener    *net.TCPListener
 }
 
-func NewApiServer(cfg *config.Config, srv *server.Server) (*ApiServer, error) {
+func NewApiServer(cfg *config.Config, srv *server.Server, listener *net.TCPListener) (*ApiServer, error) {
 	s := new(ApiServer)
 	s.cfg = cfg
 	s.proxy = srv
-	s.webAddr = cfg.WebAddr
 	s.webUser = cfg.WebUser
 	s.webPassword = cfg.WebPassword
+	s.listener = listener
 
 	// 使用Echo服务
 	s.Echo = echo.New()
-	rolling_log.Printf(media_utils.Green("Web erver running: %s"), s.webAddr)
 	return s, nil
 }
 
@@ -53,22 +51,15 @@ func (s *ApiServer) Run() error {
 	rolling_log.Info("Web server running...")
 	s.RegisterMiddleware()
 	s.RegisterURL()
-	std := standard.New(s.webAddr)
+	std := standard.WithConfig(engine.Config{})
 	std.SetHandler(s)
-	graceful.ListenAndServe(std.Server, 5 * time.Second)
+
+	overseer.HttpServe(s.listener, std)
 	return nil
 }
 
 // 配置日志, 异常处理，认证
 func (s *ApiServer) RegisterMiddleware() {
-	//s.Use(mw.Logger())
-	//s.Use(mw.LoggerWithConfig(mw.LoggerConfig{
-	//	Format: `{"time":"${time_rfc3339}","remote_ip":"${remote_ip}",` +
-	//		`"method":"${method}","uri":"${uri}","status":${status}, "latency":${latency},` +
-	//		`"latency_human":"${latency_human}","bytes_in":${bytes_in},` +
-	//		`"bytes_out":${bytes_out}}` + "\n",
-	//	Output: golog.GlobalSqlLogger,
-	//}))
 	s.Use(mw.Recover())
 	// s.Use(mw.BasicAuth(s.CheckAuth))
 }

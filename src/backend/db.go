@@ -8,8 +8,8 @@ import (
 	"core/errors"
 	"fmt"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
-	"media_utils"
 	"mysql"
+	"utils"
 )
 
 const (
@@ -182,12 +182,12 @@ func (db *DB) Ping() error {
 	defer db.pingMutex.Unlock()
 
 	// 如果最近1s内检查过，则直接返回上次的结果
-	if media_utils.Microseconds()-db.lastChecked < 1000000 {
+	if utils.Microseconds()-db.lastChecked < 1000000 {
 		return db.lastError
 	}
 
 	// 更新本地的检测结果
-	db.lastChecked = media_utils.Microseconds()
+	db.lastChecked = utils.Microseconds()
 	var err error
 
 	// 专门的checkConn

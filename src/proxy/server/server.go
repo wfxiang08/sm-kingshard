@@ -15,10 +15,9 @@ import (
 	"backend"
 	"config"
 	"core/errors"
+	"github.com/fatih/color"
 	"github.com/wfxiang08/cyutils/utils/atomic2"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
-	"gracenet"
-	"media_utils"
 	"mysql"
 	"proxy/router"
 	"sync"
@@ -28,8 +27,8 @@ import (
 // Schema的定义：
 //
 type Schema struct {
-	ShardedNodes       map[string]*backend.Node // Sharding模式下的Nodes
-	AllNodes           map[string]*backend.Node // 所有的Nodes
+	ShardedNodes map[string]*backend.Node // Sharding模式下的Nodes
+	AllNodes     map[string]*backend.Node // 所有的Nodes
 
 	ShardDBDefaultNode *backend.Node
 	ShardDB            string
@@ -72,11 +71,11 @@ const (
 )
 
 type Server struct {
-	cfg                *config.Config
-	addr               string
-	user               string
-	password           string
-	readonly           bool
+	cfg      *config.Config
+	addr     string
+	user     string
+	password string
+	readonly bool
 	//db       string
 
 	// 这些是什么逻辑?
@@ -91,22 +90,19 @@ type Server struct {
 	allowipsIndex      int32
 	allowips           [2][]net.IP
 
-	counter            *Counter
-	nodes              map[string]*backend.Node
-	schema             *Schema
+	counter *Counter
+	nodes   map[string]*backend.Node
+	schema  *Schema
 
-	listener           net.Listener
-
-	// 做Graceful运维
-	graceNet           *gracenet.Net
+	listener net.Listener
 
 	// running状态， acceptStop chan控制
-	running            atomic2.Bool
-	acceptStop         chan bool
-	activeClients      sync.WaitGroup
+	running       atomic2.Bool
+	acceptStop    chan bool
+	activeClients sync.WaitGroup
 
-	clientMutex        sync.Mutex
-	clientList         map[string]bool
+	clientMutex sync.Mutex
+	clientList  map[string]bool
 }
 
 //
@@ -114,11 +110,6 @@ type Server struct {
 //
 func (s *Server) WaitClientsDone() {
 	s.activeClients.Wait()
-}
-
-// 启动一个新的进程
-func (s *Server) StartProcess() (int, error) {
-	return s.graceNet.StartProcess(&s.running)
 }
 
 //
@@ -316,10 +307,9 @@ func (s *Server) parseSchema() error {
 //
 // 创建Server
 //
-func NewServer(cfg *config.Config) (*Server, error) {
+func NewServer(cfg *config.Config, listener net.Listener) (*Server, error) {
 	s := new(Server)
 
-	s.graceNet = &gracenet.Net{}
 	s.cfg = cfg
 	s.acceptStop = make(chan bool, 10)
 	s.counter = new(Counter)
@@ -377,33 +367,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	// 监听tcp socket
-	// TODO: 支持unix domain socket, 参考rpc_proxy来写
-	var err error
-
-	// addr两种格式:
-	//       /usr/local/rpc_proxy/proxy.sock
-	//       127.0.0.1:8989
-	//
-	if strings.Index(s.addr, ":") != -1 {
-		// 采用tcp协议
-		s.listener, err = s.graceNet.Listen("tcp", s.addr)
-	} else {
-		s.listener, err = s.graceNet.Listen("unix", s.addr)
-		// 注意: 该Socket需要给所有需要访问该接口的人以读写的权限
-		// 因此最终的 sock文件的权限为: 0777
-		// 例如: aa.sock root/root 07777
-		//      换一个用户，rm aa.sock 似乎无效
-		filePath := s.addr
-		os.Chmod(filePath, os.ModePerm)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf(media_utils.Green("Proxy server running: %s"), s.addr)
-
+	s.listener = listener
 	return s, nil
 }
 
@@ -615,11 +579,11 @@ func (s *Server) DelAllowIP(v string) error {
 		ipVec2 := strings.Split(s.cfg.AllowIps, ",")
 		for i, ip := range s.allowips[1] {
 			if ip.Equal(clientIP) {
-				s.allowips[1] = append(s.allowips[1][:i], s.allowips[1][i + 1:]...)
+				s.allowips[1] = append(s.allowips[1][:i], s.allowips[1][i+1:]...)
 				atomic.StoreInt32(&s.allowipsIndex, 1)
 				for i, ip := range ipVec2 {
 					if ip == v {
-						ipVec2 = append(ipVec2[:i], ipVec2[i + 1:]...)
+						ipVec2 = append(ipVec2[:i], ipVec2[i+1:]...)
 						s.cfg.AllowIps = strings.Trim(strings.Join(ipVec2, ","), ",")
 						return nil
 					}
@@ -632,11 +596,11 @@ func (s *Server) DelAllowIP(v string) error {
 		ipVec2 := strings.Split(s.cfg.AllowIps, ",")
 		for i, ip := range s.allowips[0] {
 			if ip.Equal(clientIP) {
-				s.allowips[0] = append(s.allowips[0][:i], s.allowips[0][i + 1:]...)
+				s.allowips[0] = append(s.allowips[0][:i], s.allowips[0][i+1:]...)
 				atomic.StoreInt32(&s.allowipsIndex, 0)
 				for i, ip := range ipVec2 {
 					if ip == v {
-						ipVec2 = append(ipVec2[:i], ipVec2[i + 1:]...)
+						ipVec2 = append(ipVec2[:i], ipVec2[i+1:]...)
 						s.cfg.AllowIps = strings.Trim(strings.Join(ipVec2, ","), ",")
 						return nil
 					}
@@ -779,11 +743,11 @@ func (s *Server) Run() error {
 					continue
 				} else {
 					// 正常关闭，不处理
-					log.Printf(media_utils.Cyan("Listener stop normally...."))
+					log.Printf(color.CyanString("Listener stop normally...."))
 					return nil
 				}
 			}
-		// 处理单个的Connection(同步Add, 异步Done, 否则在重启的时候不太方面处理边界情况)
+			// 处理单个的Connection(同步Add, 异步Done, 否则在重启的时候不太方面处理边界情况)
 			s.activeClients.Add(1)
 			go s.onConn(a.conn)
 
@@ -827,7 +791,7 @@ func (s *Server) DeleteSlave(node string, addr string) error {
 	for i, v1 := range s.cfg.Nodes {
 		if node == v1.Name {
 			s1 := strings.Split(v1.Slave, backend.SlaveSplit)
-			s2 := make([]string, 0, len(s1) - 1)
+			s2 := make([]string, 0, len(s1)-1)
 			for _, v2 := range s1 {
 				hostPort := strings.Split(v2, backend.WeightSplit)[0]
 				if addr != hostPort {

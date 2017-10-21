@@ -1,16 +1,14 @@
-hash: a10874a1afc19ed15819c3c9888d816bba01f3884966e7ba7abcf0d151cb8aa9
-updated: 2017-07-11T05:35:29.025614885+08:00
+hash: 2cccdb6e8b635b8adf2a6571fe5e195f660fa5ca894ed64006bb939c7b982d73
+updated: 2017-10-21T21:48:22.680456506+08:00
 imports:
 - name: github.com/c4pt0r/cfg
   version: 429e6985f0b07bceaa33b57ee612fbca4797a9a6
 - name: github.com/dgrijalva/jwt-go
   version: 24c63f56522a87ec5339cc3567883f1039378fdb
-- name: github.com/facebookgo/atomicfile
-  version: 2de1f203e7d5e386a6833233882782932729f27e
-- name: github.com/facebookgo/pidfile
-  version: f242e2999868dcd267a2b86e49ce1f9cf9e15b16
 - name: github.com/fatih/color
-  version: 9131ab34cf20d2f6d83fdc67168a5430d1c7dc23
+  version: 570b54cabe6b8eb0bc2dfce68d964677d63b5260
+- name: github.com/kardianos/osext
+  version: ae77be60afb1dcacde03767a8c37337fad28ac14
 - name: github.com/labstack/echo
   version: 03efe4d61b73979961720b92c3cee985c29a24f2
   subpackages:
@@ -32,8 +30,6 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
   repo: https://github.com/mattn/go-isatty
-- name: github.com/tylerb/graceful
-  version: 48afeb21e2fcbcff0f30bd5ad6b97747b0fae38e
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: github.com/wfxiang08/cyutils
@@ -48,7 +44,6 @@ imports:
   version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
   subpackages:
   - context
-  - netutil
 - name: golang.org/x/sys
   version: e24f485414aeafb646f6fca458b0bf869c0880a1
   repo: https://go.googlesource.com/sys

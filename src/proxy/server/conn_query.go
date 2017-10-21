@@ -25,7 +25,7 @@ import (
 	"core/errors"
 	"core/hack"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
-	"media_utils"
+	"utils"
 	"mysql"
 	"proxy/router"
 	"sqlparser"
@@ -35,9 +35,9 @@ import (
 func (c *ClientConn) handleQuery(sql string) (err error) {
 	log.Debugf("Query SQL: %s", sql)
 
-	start := media_utils.Microseconds()
+	start := utils.Microseconds()
 	defer func() {
-		elapsed := (media_utils.Microseconds() - start)
+		elapsed := (utils.Microseconds() - start)
 		log.Debugf("Elpased: %6.3fs, SQL: %s", float64(elapsed)*1e-6, sql)
 
 		// 处理panic等错误，防止崩溃

@@ -1,4 +1,4 @@
-package media_utils
+package utils
 
 import "time"
 
