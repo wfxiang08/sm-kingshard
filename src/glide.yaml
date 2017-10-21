@@ -1,0 +1,15 @@
+package: .
+import:
+- package: github.com/labstack/echo
+  subpackages:
+  - engine/standard
+  - middleware
+- package: github.com/tylerb/graceful
+- package: github.com/wfxiang08/cyutils
+  subpackages:
+  - utils
+  - utils/rolling_log
+  - utils/atomic2
+- package: gopkg.in/yaml.v2
+- package: github.com/facebookgo/pidfile
+- package: github.com/facebookgo/atomicfile

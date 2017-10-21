@@ -1,0 +1,59 @@
+hash: a10874a1afc19ed15819c3c9888d816bba01f3884966e7ba7abcf0d151cb8aa9
+updated: 2017-07-11T05:35:29.025614885+08:00
+imports:
+- name: github.com/c4pt0r/cfg
+  version: 429e6985f0b07bceaa33b57ee612fbca4797a9a6
+- name: github.com/dgrijalva/jwt-go
+  version: 24c63f56522a87ec5339cc3567883f1039378fdb
+- name: github.com/facebookgo/atomicfile
+  version: 2de1f203e7d5e386a6833233882782932729f27e
+- name: github.com/facebookgo/pidfile
+  version: f242e2999868dcd267a2b86e49ce1f9cf9e15b16
+- name: github.com/fatih/color
+  version: 9131ab34cf20d2f6d83fdc67168a5430d1c7dc23
+- name: github.com/labstack/echo
+  version: 03efe4d61b73979961720b92c3cee985c29a24f2
+  subpackages:
+  - context
+  - engine
+  - engine/standard
+  - log
+  - middleware
+- name: github.com/labstack/gommon
+  version: 431777a5117c8de4352a400dad1e2a55f484b189
+  subpackages:
+  - bytes
+  - color
+  - log
+  - random
+- name: github.com/mattn/go-colorable
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
+  repo: https://github.com/mattn/go-colorable
+- name: github.com/mattn/go-isatty
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+  repo: https://github.com/mattn/go-isatty
+- name: github.com/tylerb/graceful
+  version: 48afeb21e2fcbcff0f30bd5ad6b97747b0fae38e
+- name: github.com/valyala/fasttemplate
+  version: 3b874956e03f1636d171bda64b130f9135f42cff
+- name: github.com/wfxiang08/cyutils
+  version: dfb8bc2b5402cb534e3f53cbd9fc3897820f7b07
+  subpackages:
+  - utils
+  - utils/atomic2
+  - utils/errors
+  - utils/rolling_log
+  - utils/trace
+- name: golang.org/x/net
+  version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
+  subpackages:
+  - context
+  - netutil
+- name: golang.org/x/sys
+  version: e24f485414aeafb646f6fca458b0bf869c0880a1
+  repo: https://go.googlesource.com/sys
+  subpackages:
+  - unix
+- name: gopkg.in/yaml.v2
+  version: 31c299268d302dd0aa9a0dcf765a3d58971ac83f
+testImports: []

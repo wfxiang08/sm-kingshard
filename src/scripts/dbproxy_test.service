@@ -1,0 +1,22 @@
+[Unit]
+Description=Kingshard DB Proxy Service
+After=network.target
+
+[Service]
+Environment="CONFIG=/usr/local/db/sm_test.yaml" "PIDFILE=/data/tmp_db/test/dbproxy.pid"
+WorkingDirectory=/usr/local/db/
+ExecStart=/usr/local/db/service_kingshard -config $CONFIG -log-path /data/tmp_db/test/service.log -log-level=debug -pidfile $PIDFILE
+#  -address /usr/local/db/proxy_unix_test.sock
+# ExecReload=/bin/kill -USR2 $MAINPID
+KillMode=mixed
+
+# StandardOutput=null
+
+Restart=always
+RestartSec=15
+
+User=worker
+Group=worker
+
+[Install]
+WantedBy=multi-user.target

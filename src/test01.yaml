@@ -1,0 +1,36 @@
+addr : 0.0.0.0:9696
+
+user :  kingshard
+password : kingshard
+
+
+# debug info
+log_level : debug
+log_sql: on
+# 20ms以上算慢请求
+slow_log_time: 20
+allow_ips : 127.0.0.1,192.168.0.14
+nodes :
+-
+    name : node1
+    db_name: kingshard_test
+    max_conns_limit : 32
+    user :  root
+    password :
+    master : 127.0.0.1:3306
+    down_after_noalive : 32
+
+# schema defines sharding rules, the db is the sharding table database.
+schema :
+    nodes: [node1]
+    default: node1
+    shard_db_default_node: node1
+    shard_db: db_test    
+    shard:
+    -
+        db : db_test
+        table: recording
+        keys: [id]
+        nodes: []
+        type: sm
+        locations: []
