@@ -25,10 +25,10 @@ import (
 	"core/errors"
 	"core/hack"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
-	"utils"
 	"mysql"
 	"proxy/router"
 	"sqlparser"
+	"utils"
 )
 
 /*处理query语句*/
@@ -38,7 +38,7 @@ func (c *ClientConn) handleQuery(sql string) (err error) {
 	start := utils.Microseconds()
 	defer func() {
 		elapsed := (utils.Microseconds() - start)
-		log.Debugf("Elpased: %6.3fs, SQL: %s", float64(elapsed)*1e-6, sql)
+		log.Debugf("Elpased: %.3fms, SQL: %s", float64(elapsed)*1e-3, sql)
 
 		// 处理panic等错误，防止崩溃
 		if e := recover(); e != nil {
