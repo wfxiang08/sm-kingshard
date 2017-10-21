@@ -39,14 +39,18 @@ Golang中定义的Signal和Linux的Signal不太一样，不要通过数字来代
 
 ## 访问
 ```
-mysql -u root -pFB362576-E3FF-4DA2-A6BB-505DECC037B0 -P9900 -h172.20.2.26
-
+mysql -u root -pxxx -P9900 -h172.1.2.12
 use shard_sm
 
 或
-mysql -u root -pFB362576-E3FF-4DA2-A6BB-505DECC037B0 -P9900 -h172.20.2.26  shard_sm
-
+mysql -u root -pxxx -P9900 -h172.1.2.12  shard_sm
 ```
+
+## Prepared Statement
+* 不建议使用Prepared Statement, 在Sharding模式下禁用
+* golang中推荐使用:
+  * user:password@tcp(db.hostname:3306)/db_name?charset=utf8mb4,utf8&interpolateParams=true&parseTime=True&loc=UTC
+  * interpolateParams=true, 表示不直接使用prepared statement
 
 ## 配置文件
 
