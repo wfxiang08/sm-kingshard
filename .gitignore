@@ -3,4 +3,5 @@ vendor
 /src/monitor_*
 /src/tool_*
 /src/task_*
+/src/service_*
 /src/conf/sm*
