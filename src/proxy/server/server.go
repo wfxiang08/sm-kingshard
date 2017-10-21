@@ -15,7 +15,6 @@ import (
 	"backend"
 	"config"
 	"core/errors"
-	"github.com/fatih/color"
 	"github.com/wfxiang08/cyutils/utils/atomic2"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
 	"mysql"
@@ -311,7 +310,6 @@ func NewServer(cfg *config.Config, listener net.Listener) (*Server, error) {
 	s := new(Server)
 
 	s.cfg = cfg
-	s.acceptStop = make(chan bool, 10)
 	s.counter = new(Counter)
 	s.addr = cfg.Addr
 	s.user = cfg.User
@@ -404,10 +402,7 @@ func (s *Server) newClientConn(co net.Conn) *ClientConn {
 	c.pkg.Sequence = 0
 
 	c.connectionId = atomic.AddUint32(&baseConnId, 1)
-	log.Debugf("Create client connection: %d", c.connectionId)
-
 	c.status = mysql.SERVER_STATUS_AUTOCOMMIT
-
 	c.salt, _ = mysql.RandomBuf(20)
 
 	c.txConns = make(map[*backend.Node]*backend.BackendConn)
@@ -449,7 +444,6 @@ func (s *Server) onConn(c net.Conn) {
 			// 获取runtime.Stack
 			buf = buf[:runtime.Stack(buf, false)] //获得当前goroutine的stacktrace
 			log.Errorf("server onConn, remoteAddr: %s, err: %v, statck: %s", c.RemoteAddr().String(), err, string(buf))
-
 		}
 
 		if len(remoteHost) > 3 {
@@ -467,7 +461,7 @@ func (s *Server) onConn(c net.Conn) {
 
 	// 检查权限
 	if allowConnect := conn.IsAllowConnect(); allowConnect == false {
-		err := mysql.NewError(mysql.ER_ACCESS_DENIED_ERROR, "ip address access denied by kingshard.")
+		err := mysql.NewError(mysql.ER_ACCESS_DENIED_ERROR, "ip address access denied by smproxy.")
 		conn.writeError(err)
 		conn.Close()
 		return
@@ -510,9 +504,7 @@ func (s *Server) ChangeProxy(v string) error {
 
 func (s *Server) ChangeLogSql(v string) error {
 	v = strings.ToLower(v)
-	//if v != golog.LogSqlOn && v != golog.LogSqlOff {
-	//	return errors.ErrCmdUnsupport
-	//}
+
 	if s.logSqlIndex == 0 {
 		s.logSql[1] = v
 		atomic.StoreInt32(&s.logSqlIndex, 1)
@@ -719,42 +711,17 @@ func (s *Server) Run() error {
 	// flush counter
 	go s.flushCounter()
 
-	// 似乎不用考虑同步的问题
-	type accepted struct {
-		conn net.Conn
-		err  error
-	}
-
-	c := make(chan accepted, 1)
 	for s.running.Get() {
 
-		// 异步 --> chan
-		go func() {
-			conn, err := s.listener.Accept()
-			c <- accepted{conn, err}
-		}()
-
-		// 两个chan同时操作
-		select {
-		case a := <-c:
-			if a.err != nil {
-				if s.running.Get() {
-					log.ErrorErrorf(a.err, "server Run")
-					continue
-				} else {
-					// 正常关闭，不处理
-					log.Printf(color.CyanString("Listener stop normally...."))
-					return nil
-				}
-			}
-			// 处理单个的Connection(同步Add, 异步Done, 否则在重启的时候不太方面处理边界情况)
-			s.activeClients.Add(1)
-			go s.onConn(a.conn)
-
-		case <-s.acceptStop:
-			log.Printf("Server for loop complete...")
-			return nil
+		conn, err := s.listener.Accept()
+		if err != nil {
+			log.ErrorErrorf(err, "Accept error")
+			break
 		}
+		// 处理单个的Connection(同步Add, 异步Done, 否则在重启的时候不太方面处理边界情况)
+		s.activeClients.Add(1)
+		go s.onConn(conn)
+
 	}
 
 	log.Printf("Server for loop complete...")
@@ -766,14 +733,6 @@ func (s *Server) Run() error {
 //
 func (s *Server) Close() {
 	s.running.Set(false)
-	s.acceptStop <- true
-
-	// 关闭端口监听
-	if s.listener != nil {
-		s.listener.Close()
-		log.Printf("Server closed listener for pid: %d", os.Getpid())
-		s.listener = nil
-	}
 }
 
 func (s *Server) DeleteSlave(node string, addr string) error {

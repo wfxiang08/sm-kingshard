@@ -107,7 +107,6 @@ func gracefulServer(state overseer.State) {
 			apiSvr, err := web.NewApiServer(cfg, svr, state.Listeners[1].(*net.TCPListener))
 			if err != nil {
 				log.ErrorErrorf(err, color.RedString("web.NewApiServer failed"))
-				svr.Close()
 				return
 			}
 			apiSvr.Run()
