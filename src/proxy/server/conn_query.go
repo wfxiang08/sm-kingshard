@@ -263,7 +263,7 @@ func (c *ClientConn) executeInNode(conn *backend.BackendConn, sql string, args [
 	if execTime > float64(c.proxy.slowLogTime[c.proxy.slowLogTimeIndex]) {
 		c.proxy.counter.IncrSlowLogTotal()
 
-		log.Printf("SLOW State: %s, %.1fms, Remote:%s, SQL: %s", state, execTime,
+		log.Debugf("SLOW State: %s, %.1fms, Remote:%s, SQL: %s", state, execTime,
 			c.c.RemoteAddr(),
 			sql)
 	}
@@ -333,7 +333,7 @@ func (c *ClientConn) executeInMultiNodes(conns map[string]*backend.BackendConn, 
 			if execTime > float64(c.proxy.slowLogTime[c.proxy.slowLogTimeIndex]) {
 				c.proxy.counter.IncrSlowLogTotal()
 
-				log.Printf("SLOW State: %s, %.1fms, Remote:%s, SQL: %s", state, execTime,
+				log.Debugf("SLOW State: %s, %.1fms, Remote:%s, SQL: %s", state, execTime,
 					c.c.RemoteAddr(), v)
 			}
 			i++

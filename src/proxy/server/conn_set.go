@@ -20,9 +20,9 @@ import (
 	"time"
 
 	"backend"
+	log "github.com/wfxiang08/cyutils/utils/rolling_log"
 	"mysql"
 	"sqlparser"
-	"github.com/wfxiang08/cyutils/utils/rolling_log"
 )
 
 var nstring = sqlparser.String
@@ -45,7 +45,7 @@ func (c *ClientConn) handleSet(stmt *sqlparser.Set, sql string) (err error) {
 		if execTime > float64(c.proxy.slowLogTime[c.proxy.slowLogTimeIndex]) {
 			c.proxy.counter.IncrSlowLogTotal()
 
-			rolling_log.Printf("SLOW State: %s, %.1fms, Remote:%s, SQL: %s", state, execTime,
+			log.Debug("SLOW State: %s, %.1fms, Remote:%s, SQL: %s", state, execTime,
 				c.c.RemoteAddr(), sql)
 
 		}
@@ -66,7 +66,7 @@ func (c *ClientConn) handleSet(stmt *sqlparser.Set, sql string) (err error) {
 		}
 		return c.handleSetNames(stmt.Exprs[0].Expr, nil)
 	default:
-		rolling_log.ErrorErrorf(err, "ClientConn handleSelect: %d command not supported, sql: %s", c.connectionId, sql)
+		log.ErrorErrorf(err, "ClientConn handleSelect: %d command not supported, sql: %s", c.connectionId, sql)
 		return c.writeOK(nil)
 	}
 }

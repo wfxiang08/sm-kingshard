@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/wfxiang08/cyutils/utils/atomic2"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
-	"io"
 	"mysql"
 	"net"
 	"runtime"
@@ -299,9 +298,6 @@ func (c *ClientConn) Run() {
 
 		// 出错，则Over
 		if err != nil {
-			if err != io.EOF {
-				log.ErrorErrorf(err, "Client readPacket failed")
-			}
 			return
 		}
 
@@ -368,8 +364,8 @@ func (c *ClientConn) dispatch(data []byte) error {
 	case mysql.COM_FIELD_LIST:
 		return c.handleFieldList(data)
 
-		// Statement的使用
-		// 不支持在Sharding模式下使用，单表还是可以考虑的
+	// Statement的使用
+	// 不支持在Sharding模式下使用，单表还是可以考虑的
 	case mysql.COM_STMT_PREPARE:
 		return c.handleStmtPrepare(hack.String(data))
 

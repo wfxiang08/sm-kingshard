@@ -1,0 +1,41 @@
+# server listen addr
+addr : 0.0.0.0:9696
+
+# server user and password
+user :  root
+password : 01
+
+log_level : info
+log_sql: off
+
+nodes :
+- 
+    name : node1 
+    db_name : node1
+
+    # default max conns for mysql server
+    max_conns_limit : 32
+
+    # all mysql in a node must have the same user and password
+    user :  root 
+    password : 
+
+    # master represents a real mysql master server 
+    master : 127.0.0.1:3309
+
+    # slave represents a real mysql salve server,and the number after '@' is 
+    # read load weight of this slave.
+    #slave : 192.168.59.101:3307@2,192.168.59.101:3307@3
+    down_after_noalive : 32
+
+# schema defines sharding rules, the db is the sharding table database.
+schema :
+    nodes: [node1]
+    # 默认shard(例如读取schema等操作)
+    shard_db_default_node: node1
+    shard_db: ks
+    shard:
+    -
+        table: sd1
+        keys: [id]
+        type: hash

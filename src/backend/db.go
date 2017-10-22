@@ -332,7 +332,8 @@ func (db *DB) GetConnFromIdle() (*Conn, error) {
 			}
 			return db.tryEnsureConn(co)
 		default:
-			log.Errorf("GetConnFromIdle, Get conn in default")
+			// 没有获取缓存
+			log.Warnf("GetConnFromIdle, Get conn in default")
 			//new connection
 			return db.newConn()
 		}

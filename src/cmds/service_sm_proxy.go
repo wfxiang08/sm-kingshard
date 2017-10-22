@@ -66,11 +66,11 @@ func main() {
 		}
 	}
 
-	if *logLevel != "" {
-		log.SetLogLevel(*logLevel)
-	} else {
-		log.SetLogLevel(cfg.LogLevel)
+	if len(*logLevel) > 0 {
+		cfg.LogLevel = *logLevel
 	}
+	log.Printf("LogLevel: %s", cfg.LogLevel)
+	log.SetLogLevel(cfg.LogLevel)
 
 	var running atomic2.Bool
 	running.Set(true)
