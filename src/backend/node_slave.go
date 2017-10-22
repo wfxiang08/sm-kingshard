@@ -54,7 +54,7 @@ func (n *Node) checkSlave() {
 			downSlave := n.DownAfterNoAlive > 0 && time.Now().Sub(slaves[invalidIndex].GetLastPing()) > n.DownAfterNoAlive
 			if downSlave || atomic.LoadInt32(&(slaves[checkedIndex].state)) != Up {
 				log.Printf("Node checkSlave, Slave down: %s, slave_down_time: %d", slaves[checkedIndex].Addr(), int64(n.DownAfterNoAlive/time.Second))
-				
+
 				// 上报异常
 				if (atomic.LoadInt32(&(slaves[checkedIndex].state)) == Up) {
 					raven.CaptureMessage(fmt.Sprintf("Slave is done: %s", slaves[checkedIndex].addr), nil)

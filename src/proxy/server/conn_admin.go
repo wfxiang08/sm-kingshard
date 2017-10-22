@@ -21,8 +21,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
-
 	"core/errors"
 	"core/hack"
 	"github.com/wfxiang08/cyutils/utils/rolling_log"
@@ -461,7 +459,7 @@ func (c *ClientConn) handleShowNodeConfig() (*mysql.Resultset, error) {
 				node.Master.Addr(),
 				"master",
 				node.Master.State(),
-				fmt.Sprintf("%v", time.Unix(node.Master.GetLastPing(), 0)),
+				fmt.Sprintf("%v", node.Master.GetLastPing()),
 				strconv.Itoa(node.Cfg.MaxConnNum),
 				strconv.Itoa(node.Master.IdleConnCount()),
 			})
@@ -475,7 +473,7 @@ func (c *ClientConn) handleShowNodeConfig() (*mysql.Resultset, error) {
 						slave.Addr(),
 						"slave",
 						slave.State(),
-						fmt.Sprintf("%v", time.Unix(slave.GetLastPing(), 0)),
+						fmt.Sprintf("%v", slave.GetLastPing()),
 						strconv.Itoa(node.Cfg.MaxConnNum),
 						strconv.Itoa(slave.IdleConnCount()),
 					})

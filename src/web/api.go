@@ -20,8 +20,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
-
 	ksError "core/errors"
 	"github.com/labstack/echo"
 )
@@ -90,7 +88,7 @@ func (s *ApiServer) GetNodesStatus(c echo.Context) error {
 		masterStatus.Address = node.Master.Addr()
 		masterStatus.Type = "master"
 		masterStatus.Status = node.Master.State()
-		masterStatus.LastPing = fmt.Sprintf("%v", time.Unix(node.Master.GetLastPing(), 0))
+		masterStatus.LastPing = fmt.Sprintf("%v", node.Master.GetLastPing())
 		masterStatus.MaxConn = node.Cfg.MaxConnNum
 		masterStatus.IdleConn = node.Master.IdleConnCount()
 		dbStatus = append(dbStatus, masterStatus)
@@ -101,7 +99,7 @@ func (s *ApiServer) GetNodesStatus(c echo.Context) error {
 			slaveStatus.Address = slave.Addr()
 			slaveStatus.Type = "slave"
 			slaveStatus.Status = slave.State()
-			slaveStatus.LastPing = fmt.Sprintf("%v", time.Unix(slave.GetLastPing(), 0))
+			slaveStatus.LastPing = fmt.Sprintf("%v", slave.GetLastPing())
 			slaveStatus.MaxConn = node.Cfg.MaxConnNum
 			slaveStatus.IdleConn = slave.IdleConnCount()
 			dbStatus = append(dbStatus, slaveStatus)
