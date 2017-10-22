@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/getsentry/raven-go"
 	"github.com/wfxiang08/cyutils/utils/atomic2"
 	"github.com/wfxiang08/cyutils/utils/http"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
@@ -23,11 +24,15 @@ var (
 	address     = flag.String("address", "", "MySQL Proxy Address")
 	pidfile     = flag.String("pidfile", "", "pidfile")
 	profileAddr = flag.String("profile_address", "", "profile address")
+	sentry      = flag.String("sentry", "", "sentry address")
 	cfg         *config.Config
 )
 
 func main() {
 	flag.Parse()
+	if len(*sentry) > 0 {
+		raven.SetDSN(*sentry)
+	}
 
 	if *version {
 		fmt.Printf("==> Git commit:%s, Build time:%s\n", hack.Version, hack.Compile)
@@ -35,6 +40,7 @@ func main() {
 	}
 	if len(*configFile) == 0 {
 		log.Errorf("must use a config file")
+		raven.CaptureMessageAndWait("SMDBProxy no config file", nil)
 		return
 	}
 
@@ -43,6 +49,7 @@ func main() {
 	cfg, err = config.ParseConfigFile(*configFile)
 	if err != nil {
 		log.ErrorErrorf(err, "parse config file error")
+		raven.CaptureMessageAndWait(fmt.Sprintf("SMDBProxy config file parse error: %s", *configFile), nil)
 		return
 	}
 
@@ -84,12 +91,17 @@ func main() {
 	}
 
 	// 3. 运行overseer
-	overseer.Run(&overseer.Config{
+	err = overseer.Run(&overseer.Config{
 		Program:   gracefulServer, // 执行的函数体
 		Addresses: addresses,
 		Debug:     false,
 		Pidfile:   *pidfile,
 	})
+
+	if err != nil {
+		log.ErrorErrorf(err, "Run failed")
+		raven.CaptureErrorAndWait(err, nil)
+	}
 
 }
 

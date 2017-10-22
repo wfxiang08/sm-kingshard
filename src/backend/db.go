@@ -66,7 +66,7 @@ type DB struct {
 	lastChecked time.Time
 	lastError   error
 	checkConn   *Conn
-	lastPing    int64
+	lastPing    time.Time
 }
 
 //
@@ -421,9 +421,9 @@ func (db *DB) GetConn() (*BackendConn, error) {
 }
 
 func (db *DB) SetLastPing() {
-	db.lastPing = time.Now().Unix()
+	db.lastPing = time.Now()
 }
 
-func (db *DB) GetLastPing() int64 {
+func (db *DB) GetLastPing() time.Time {
 	return db.lastPing
 }

@@ -1,10 +1,14 @@
-hash: 12386b67a3a2c13dec61928ffd766728f1b291fc766ac8d83c2e700d5984e7fa
-updated: 2017-10-22T09:51:26.138498758+08:00
+hash: 6c19f9fda421a914b4c28929d87033ec9ac5bfb873ca77630c992b2c5f124eab
+updated: 2017-10-22T10:20:51.253190539+08:00
 imports:
+- name: github.com/certifi/gocertifi
+  version: 3fd9e1adb12b72d2f3f82191d49be9b93c69f67c
 - name: github.com/dgrijalva/jwt-go
   version: 24c63f56522a87ec5339cc3567883f1039378fdb
 - name: github.com/fatih/color
   version: 570b54cabe6b8eb0bc2dfce68d964677d63b5260
+- name: github.com/getsentry/raven-go
+  version: 1452f6376ddb15c546b6d7567e1d9518765391b5
 - name: github.com/kardianos/osext
   version: ae77be60afb1dcacde03767a8c37337fad28ac14
 - name: github.com/labstack/echo
@@ -37,6 +41,7 @@ imports:
   - utils/atomic2
   - utils/config
   - utils/errors
+  - utils/http
   - utils/rolling_log
   - utils/trace
 - name: golang.org/x/net

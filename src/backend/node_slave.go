@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+	"github.com/getsentry/raven-go"
+	"fmt"
 )
 
 // 获取一个Slave? DB的选择很重要
@@ -49,12 +51,17 @@ func (n *Node) checkSlave() {
 	for i := 0; i < len(slaves); i++ {
 		if err := slaves[checkedIndex].Ping(); err != nil {
 			// 如果是ping出现错误, 则暂时认为没有问题, 知道时间间隔太大
-			downSlave := int64(n.DownAfterNoAlive) > 0 && time.Now().Unix()-slaves[invalidIndex].GetLastPing() > int64(n.DownAfterNoAlive/time.Second)
-			log.Printf("Node checkSlave, Slave down: %s, slave_down_time: %d", slaves[checkedIndex].Addr(), int64(n.DownAfterNoAlive/time.Second))
-
+			downSlave := n.DownAfterNoAlive > 0 && time.Now().Sub(slaves[invalidIndex].GetLastPing()) > n.DownAfterNoAlive
 			if downSlave || atomic.LoadInt32(&(slaves[checkedIndex].state)) != Up {
+				log.Printf("Node checkSlave, Slave down: %s, slave_down_time: %d", slaves[checkedIndex].Addr(), int64(n.DownAfterNoAlive/time.Second))
+				
+				// 上报异常
+				if (atomic.LoadInt32(&(slaves[checkedIndex].state)) == Up) {
+					raven.CaptureMessage(fmt.Sprintf("Slave is done: %s", slaves[checkedIndex].addr), nil)
+					atomic.StoreInt32(&(slaves[checkedIndex].state), Down)
+				}
+
 				invalidIndex--
-				atomic.StoreInt32(&(slaves[checkedIndex].state), Down)
 				slaves[checkedIndex], slaves[invalidIndex] = slaves[invalidIndex], slaves[checkedIndex]
 			} else {
 				// 正常的状态延续
@@ -64,6 +71,7 @@ func (n *Node) checkSlave() {
 			slaves[checkedIndex].SetLastPing()
 
 			if atomic.LoadInt32(&(slaves[checkedIndex].state)) != ManualDown {
+				raven.CaptureMessage(fmt.Sprintf("Slave is up: %s", slaves[checkedIndex].addr), nil)
 				atomic.StoreInt32(&(slaves[checkedIndex].state), Up)
 				checkedIndex++
 			} else {

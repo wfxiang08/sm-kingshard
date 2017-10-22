@@ -7,6 +7,8 @@ import (
 
 	"config"
 	"core/errors"
+	"fmt"
+	"github.com/getsentry/raven-go"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
 )
 
@@ -14,7 +16,6 @@ const (
 	Master      = "master"
 	Slave       = "slave"
 	SlaveSplit  = ","
-	WeightSplit = "@"
 )
 
 // Node是什么概念呢?
@@ -33,13 +34,12 @@ type Node struct {
 }
 
 func (n *Node) CheckNode() {
-	//to do
-	//1 check connection alive
-	//  每16s做一次健康检查? 能否正常工作每一个Connection也会有自己的判断, 只是ping的结果能做一个整体上的判断
+	// 每5s做一次健康检查
+	// 能否正常工作每一个Connection也会有自己的判断, 只是ping的结果能做一个整体上的判断, 避免其他的Connection做无效的尝试
 	for {
 		n.checkMaster()
 		n.checkSlave()
-		time.Sleep(16 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -74,20 +74,21 @@ func (n *Node) checkMaster() {
 	if err := db.Ping(); err != nil {
 		// Ping失败了，如何处理呢?
 		log.ErrorErrorf(err, "Node: checkMaster ping db.Addr: %s", db.Addr())
+
+		// 标记Master数据库挂了
+		if n.DownAfterNoAlive > 0 && time.Now().Sub(db.GetLastPing()) > n.DownAfterNoAlive {
+			log.Printf("Node: checkMaster Master down db.Addr: %s, Master_down_time: %d",
+				db.Addr(), int64(n.DownAfterNoAlive/time.Second))
+			atomic.StoreInt32(&(db.state), Down)
+			raven.CaptureMessage(fmt.Sprintf("Master is down: %s", db.addr), nil)
+		}
 	} else {
 		// ping成功了，则更新状态
 		db.SetLastPing()
 		if atomic.LoadInt32(&(db.state)) != ManualDown {
 			atomic.StoreInt32(&(db.state), Up)
+			raven.CaptureMessage(fmt.Sprintf("Master is up: %s", db.addr), nil)
 		}
-		return
-	}
-
-	// 标记Master数据库挂了
-	if int64(n.DownAfterNoAlive) > 0 && time.Now().Unix()-db.GetLastPing() > int64(n.DownAfterNoAlive/time.Second) {
-		log.Printf("Node: checkMaster Master down db.Addr: %s, Master_down_time: %d",
-			db.Addr(), int64(n.DownAfterNoAlive/time.Second))
-		n.DownMaster(db.addr, Down)
 	}
 }
 
@@ -136,6 +137,7 @@ func (n *Node) DownMaster(addr string, state int32) error {
 
 	// 关闭Master, 设置状态
 	db.Close()
+	n.Master = nil
 	atomic.StoreInt32(&(db.state), state)
 	return nil
 }

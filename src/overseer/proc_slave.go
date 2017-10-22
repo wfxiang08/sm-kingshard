@@ -77,6 +77,9 @@ func (sp *slave) run() error {
 	return nil
 }
 
+//
+// 子进程监控父进程，通过 kill -0 方式监控"死活", 如果父进程挂了，子进程自己退出
+//
 func (sp *slave) watchParent() error {
 	sp.masterPid = os.Getppid()
 
@@ -102,6 +105,7 @@ func (sp *slave) watchParent() error {
 
 // 初始化文件描述符
 func (sp *slave) initFileDescriptors() error {
+
 	//inspect file descriptors
 	numFDs, err := strconv.Atoi(os.Getenv(envNumFDs))
 	if err != nil {

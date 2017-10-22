@@ -736,7 +736,6 @@ func (s *Server) Close() {
 }
 
 func (s *Server) DeleteSlave(node string, addr string) error {
-	addr = strings.Split(addr, backend.WeightSplit)[0]
 	n := s.GetNode(node)
 	if n == nil {
 		return fmt.Errorf("invalid node %s", node)
@@ -751,10 +750,9 @@ func (s *Server) DeleteSlave(node string, addr string) error {
 		if node == v1.Name {
 			s1 := strings.Split(v1.Slave, backend.SlaveSplit)
 			s2 := make([]string, 0, len(s1)-1)
-			for _, v2 := range s1 {
-				hostPort := strings.Split(v2, backend.WeightSplit)[0]
+			for _, hostPort := range s1 {
 				if addr != hostPort {
-					s2 = append(s2, v2)
+					s2 = append(s2, hostPort)
 				}
 			}
 			s.cfg.Nodes[i].Slave = strings.Join(s2, backend.SlaveSplit)

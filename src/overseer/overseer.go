@@ -76,8 +76,10 @@ func Run(c *Config) error {
 		return slaveProcess.run()
 	} else {
 
+		//
+		// pid文件的管理
+		//
 		if len(c.Pidfile) > 0 {
-			// pid文件的管理
 			if pidfile, err := filepath.Abs(c.Pidfile); err != nil {
 				log.WarnErrorf(err, "parse pidfile = '%s' failed", c.Pidfile)
 				// 将pid写入文件

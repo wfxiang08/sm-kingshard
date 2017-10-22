@@ -5,9 +5,12 @@ import:
   - engine/standard
   - middleware
 - package: github.com/wfxiang08/cyutils
+  version: 2f66bef634fe739bd45e59bd0d49aaef30637a33
   subpackages:
   - utils
   - utils/rolling_log
   - utils/atomic2
-  version: 2f66bef634fe739bd45e59bd0d49aaef30637a33
 - package: gopkg.in/yaml.v2
+- package: github.com/getsentry/raven-go
+- package: github.com/certifi/gocertifi
+  version: 2017.07.27
