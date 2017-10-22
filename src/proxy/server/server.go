@@ -20,6 +20,7 @@ import (
 	"mysql"
 	"proxy/router"
 	"sync"
+	"utils"
 )
 
 //
@@ -425,6 +426,7 @@ func (s *Server) onConn(c net.Conn) {
 	// net.Conn 封装 ClientConn
 	// 底层的[]byte协议 --> Io Packet协议
 	//
+	start := time.Now()
 	conn := s.newClientConn(c) //新建一个conn
 
 	remoteHost := c.RemoteAddr().String()
@@ -471,6 +473,11 @@ func (s *Server) onConn(c net.Conn) {
 		conn.writeError(err)
 		conn.Close()
 		return
+	}
+
+	if config.ProfileMode {
+		handShake := time.Now().Sub(start)
+		log.Debugf("Handshake elapsed: %.3fms", utils.Nano2MilliDuration(handShake))
 	}
 
 	// 正式处理各种SQL交互
@@ -708,20 +715,20 @@ func (s *Server) Run() error {
 	log.Info("Proxy server run...")
 	s.running.Set(true)
 
-	// flush counter
+	// 1. 统计数据
 	go s.flushCounter()
 
+	// 2. 监听请求，处理请求
 	for s.running.Get() {
-
 		conn, err := s.listener.Accept()
 		if err != nil {
+			// 要快退出时，会出现Accept Error(Listener被关闭)
 			log.ErrorErrorf(err, "Accept error")
 			break
 		}
 		// 处理单个的Connection(同步Add, 异步Done, 否则在重启的时候不太方面处理边界情况)
 		s.activeClients.Add(1)
 		go s.onConn(conn)
-
 	}
 
 	log.Printf("Server for loop complete...")

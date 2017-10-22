@@ -17,57 +17,59 @@ package server
 import (
 	"backend"
 	"bytes"
+	"config"
 	"core/hack"
 	"encoding/binary"
 	"fmt"
+	"github.com/wfxiang08/cyutils/utils/atomic2"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
+	"io"
 	"mysql"
 	"net"
 	"runtime"
 	"sync"
-	"github.com/wfxiang08/cyutils/utils/atomic2"
 )
 
 //client <-> proxy
 type ClientConn struct {
 	sync.Mutex
 
-	pkg          *mysql.PacketIO
+	pkg *mysql.PacketIO
 
-	c            net.Conn
+	c net.Conn
 
-	proxy        *Server
+	proxy *Server
 
-	capability   uint32
+	capability uint32
 
 	connectionId uint32
 
-	status       uint16
-	collation    mysql.CollationId
-	charset      string
+	status    uint16
+	collation mysql.CollationId
+	charset   string
 
-	user         string
-	CurrentDB    string           // 当前Connection上默认的db
+	user      string
+	CurrentDB string // 当前Connection上默认的db
 
-	salt         []byte
+	salt []byte
 
-	schema       *Schema
+	schema *Schema
 
-	txConns      map[*backend.Node]*backend.BackendConn
+	txConns map[*backend.Node]*backend.BackendConn
 
-	closed       atomic2.Bool
+	closed atomic2.Bool
 
 	lastInsertId int64
 	affectedRows int64
 
-	stmtId       uint32
+	stmtId uint32
 
-	stmts        map[uint32]*Stmt //prepare相关,client端到proxy的stmt
+	stmts map[uint32]*Stmt //prepare相关,client端到proxy的stmt
 }
 
 var DEFAULT_CAPABILITY uint32 = mysql.CLIENT_LONG_PASSWORD | mysql.CLIENT_LONG_FLAG |
-		mysql.CLIENT_CONNECT_WITH_DB | mysql.CLIENT_PROTOCOL_41 |
-		mysql.CLIENT_TRANSACTIONS | mysql.CLIENT_SECURE_CONNECTION
+	mysql.CLIENT_CONNECT_WITH_DB | mysql.CLIENT_PROTOCOL_41 |
+	mysql.CLIENT_TRANSACTIONS | mysql.CLIENT_SECURE_CONNECTION
 
 var baseConnId uint32 = 10000
 
@@ -154,7 +156,7 @@ func (c *ClientConn) writeInitialHandshake() error {
 
 	// connection id
 	// Connection的标志:
-	data = append(data, byte(c.connectionId), byte(c.connectionId >> 8), byte(c.connectionId >> 16), byte(c.connectionId >> 24))
+	data = append(data, byte(c.connectionId), byte(c.connectionId>>8), byte(c.connectionId>>16), byte(c.connectionId>>24))
 
 	// auth-plugin-data-part-1
 	data = append(data, c.salt[0:8]...)
@@ -166,18 +168,18 @@ func (c *ClientConn) writeInitialHandshake() error {
 	//
 	// DEFAULT_CAPABILITY 的4个字节，在不同地方发送
 	//
-	data = append(data, byte(DEFAULT_CAPABILITY), byte(DEFAULT_CAPABILITY >> 8))
+	data = append(data, byte(DEFAULT_CAPABILITY), byte(DEFAULT_CAPABILITY>>8))
 
 	// TODO: 需要定制, 可能优先支持utf8mb4编码
 	//charset, utf-8 default
 	data = append(data, uint8(mysql.DEFAULT_COLLATION_ID))
 
 	//status
-	data = append(data, byte(c.status), byte(c.status >> 8))
+	data = append(data, byte(c.status), byte(c.status>>8))
 
 	//below 13 byte may not be used
 	//capability flag upper 2 bytes, using default capability here
-	data = append(data, byte(DEFAULT_CAPABILITY >> 16), byte(DEFAULT_CAPABILITY >> 24))
+	data = append(data, byte(DEFAULT_CAPABILITY>>16), byte(DEFAULT_CAPABILITY>>24))
 
 	//filter [0x15], for wireshark dump, value is 0x15
 	data = append(data, 0x15)
@@ -234,14 +236,14 @@ func (c *ClientConn) readHandshakeResponse() error {
 	pos += 23
 
 	//user name
-	c.user = string(data[pos : pos + bytes.IndexByte(data[pos:], 0)])
+	c.user = string(data[pos : pos+bytes.IndexByte(data[pos:], 0)])
 
 	pos += len(c.user) + 1
 
 	//auth length and auth
 	authLen := int(data[pos])
 	pos++
-	auth := data[pos : pos + authLen]
+	auth := data[pos : pos+authLen]
 
 	//
 	// 校验用户名和密码
@@ -258,12 +260,12 @@ func (c *ClientConn) readHandshakeResponse() error {
 	// mysql -u root -pxxx -P9900 -h127.0.0.1 shard_sm
 	// 在初始连接中使用database name
 	var db string
-	if c.capability & mysql.CLIENT_CONNECT_WITH_DB > 0 {
+	if c.capability&mysql.CLIENT_CONNECT_WITH_DB > 0 {
 		if len(data[pos:]) == 0 {
 			return nil
 		}
 
-		db = string(data[pos : pos + bytes.IndexByte(data[pos:], 0)])
+		db = string(data[pos : pos+bytes.IndexByte(data[pos:], 0)])
 		pos += len(c.CurrentDB) + 1
 
 	}
@@ -297,6 +299,9 @@ func (c *ClientConn) Run() {
 
 		// 出错，则Over
 		if err != nil {
+			if err != io.EOF {
+				log.ErrorErrorf(err, "Client readPacket failed")
+			}
 			return
 		}
 
@@ -363,8 +368,8 @@ func (c *ClientConn) dispatch(data []byte) error {
 	case mysql.COM_FIELD_LIST:
 		return c.handleFieldList(data)
 
-	// Statement的使用
-	// 不支持在Sharding模式下使用，单表还是可以考虑的
+		// Statement的使用
+		// 不支持在Sharding模式下使用，单表还是可以考虑的
 	case mysql.COM_STMT_PREPARE:
 		return c.handleStmtPrepare(hack.String(data))
 
@@ -385,7 +390,9 @@ func (c *ClientConn) dispatch(data []byte) error {
 	default:
 		// 其他的Command暂时不支持
 		msg := fmt.Sprintf("command %d not supported now", cmd)
-		log.Errorf("ClientConn dispatch: %s", msg)
+		if config.ProfileMode {
+			log.Errorf("ClientConn dispatch: %s", msg)
+		}
 		return mysql.NewError(mysql.ER_UNKNOWN_ERROR, msg)
 	}
 
@@ -405,8 +412,8 @@ func (c *ClientConn) writeOK(r *mysql.Result) error {
 	data = append(data, mysql.PutLengthEncodedInt(r.AffectedRows)...)
 	data = append(data, mysql.PutLengthEncodedInt(r.InsertId)...)
 
-	if c.capability & mysql.CLIENT_PROTOCOL_41 > 0 {
-		data = append(data, byte(r.Status), byte(r.Status >> 8))
+	if c.capability&mysql.CLIENT_PROTOCOL_41 > 0 {
+		data = append(data, byte(r.Status), byte(r.Status>>8))
 		data = append(data, 0, 0)
 	}
 
@@ -420,12 +427,12 @@ func (c *ClientConn) writeError(e error) error {
 		m = mysql.NewError(mysql.ER_UNKNOWN_ERROR, e.Error())
 	}
 
-	data := make([]byte, 4, 16 + len(m.Message))
+	data := make([]byte, 4, 16+len(m.Message))
 
 	data = append(data, mysql.ERR_HEADER)
-	data = append(data, byte(m.Code), byte(m.Code >> 8))
+	data = append(data, byte(m.Code), byte(m.Code>>8))
 
-	if c.capability & mysql.CLIENT_PROTOCOL_41 > 0 {
+	if c.capability&mysql.CLIENT_PROTOCOL_41 > 0 {
 		data = append(data, '#')
 		data = append(data, m.State...)
 	}
@@ -439,9 +446,9 @@ func (c *ClientConn) writeEOF(status uint16) error {
 	data := make([]byte, 4, 9)
 
 	data = append(data, mysql.EOF_HEADER)
-	if c.capability & mysql.CLIENT_PROTOCOL_41 > 0 {
+	if c.capability&mysql.CLIENT_PROTOCOL_41 > 0 {
 		data = append(data, 0, 0)
-		data = append(data, byte(status), byte(status >> 8))
+		data = append(data, byte(status), byte(status>>8))
 	}
 
 	return c.writePacket(data)
@@ -451,9 +458,9 @@ func (c *ClientConn) writeEOFBatch(total []byte, status uint16, direct bool) ([]
 	data := make([]byte, 4, 9)
 
 	data = append(data, mysql.EOF_HEADER)
-	if c.capability & mysql.CLIENT_PROTOCOL_41 > 0 {
+	if c.capability&mysql.CLIENT_PROTOCOL_41 > 0 {
 		data = append(data, 0, 0)
-		data = append(data, byte(status), byte(status >> 8))
+		data = append(data, byte(status), byte(status>>8))
 	}
 
 	return c.writePacketBatch(total, data, direct)

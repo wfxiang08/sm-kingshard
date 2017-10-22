@@ -17,15 +17,16 @@ import (
 )
 
 var (
-	configFile  = flag.String("config", "/etc/ks.yaml", "kingshard config file")
-	logLevel    = flag.String("log-level", "", "log level [debug|info|warn|error], default error")
-	logPath     = flag.String("log-path", "", "")
-	version     = flag.Bool("v", false, "the version of kingshard")
-	address     = flag.String("address", "", "MySQL Proxy Address")
-	pidfile     = flag.String("pidfile", "", "pidfile")
-	profileAddr = flag.String("profile_address", "", "profile address")
-	sentry      = flag.String("sentry", "", "sentry address")
-	cfg         *config.Config
+	configFile   = flag.String("config", "/etc/ks.yaml", "kingshard config file")
+	logLevel     = flag.String("log-level", "", "log level [debug|info|warn|error], default error")
+	logPath      = flag.String("log-path", "", "")
+	version      = flag.Bool("v", false, "the version of kingshard")
+	address      = flag.String("address", "", "MySQL Proxy Address")
+	pidfile      = flag.String("pidfile", "", "pidfile")
+	profileAddr  = flag.String("profile_address", "", "profile address")
+	sentry       = flag.String("sentry", "", "sentry address")
+	cfg          *config.Config
+	profile_mode = flag.Bool("profile", false, "profile mode")
 )
 
 func main() {
@@ -43,6 +44,8 @@ func main() {
 		raven.CaptureMessageAndWait("SMDBProxy no config file", nil)
 		return
 	}
+
+	config.ProfileMode = *profile_mode
 
 	// 解析配置文件
 	var err error
@@ -107,7 +110,7 @@ func main() {
 
 func gracefulServer(state overseer.State) {
 
-	svr, err := server.NewServer(cfg, state.Listeners[0])
+	proxyServer, err := server.NewServer(cfg, state.Listeners[0])
 	if err != nil {
 		log.PanicErrorf(err, "start server failed")
 	}
@@ -115,7 +118,7 @@ func gracefulServer(state overseer.State) {
 	if len(state.Listeners) > 1 {
 		// 启动http admin server
 		go func() {
-			apiSvr, err := web.NewApiServer(cfg, svr, state.Listeners[1].(*net.TCPListener))
+			apiSvr, err := web.NewApiServer(cfg, proxyServer, state.Listeners[1].(*net.TCPListener))
 			if err != nil {
 				log.ErrorErrorf(err, color.RedString("web.NewApiServer failed"))
 				return
@@ -125,5 +128,5 @@ func gracefulServer(state overseer.State) {
 	}
 
 	// 启动db proxy service
-	svr.Run()
+	proxyServer.Run()
 }
