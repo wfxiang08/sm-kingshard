@@ -35,10 +35,10 @@ import (
 func (c *ClientConn) handleQuery(sql string) (err error) {
 	log.Debugf("Query SQL: %s", sql)
 
-	start := utils.Microseconds()
+	start := time.Now()
 	defer func() {
-		elapsed := (utils.Microseconds() - start)
-		log.Debugf("Elpased: %.3fms, SQL: %s", float64(elapsed)*1e-3, sql)
+		elapsed := time.Now().Sub(start)
+		log.Debugf("Elpased: %.3fms, SQL: %s", utils.Nano2MilliDuration(elapsed), sql)
 
 		// 处理panic等错误，防止崩溃
 		if e := recover(); e != nil {
@@ -77,6 +77,7 @@ func (c *ClientConn) handleQuery(sql string) (err error) {
 		return err
 	}
 
+	// "只读模式"下禁止: Insert, Update, Delete, Replace, Truncate等操作
 	switch v := stmt.(type) {
 	case *sqlparser.Select:
 		return c.handleSelect(v, nil)

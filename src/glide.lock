@@ -1,8 +1,6 @@
-hash: 2cccdb6e8b635b8adf2a6571fe5e195f660fa5ca894ed64006bb939c7b982d73
-updated: 2017-10-21T21:48:22.680456506+08:00
+hash: 12386b67a3a2c13dec61928ffd766728f1b291fc766ac8d83c2e700d5984e7fa
+updated: 2017-10-22T09:51:26.138498758+08:00
 imports:
-- name: github.com/c4pt0r/cfg
-  version: 429e6985f0b07bceaa33b57ee612fbca4797a9a6
 - name: github.com/dgrijalva/jwt-go
   version: 24c63f56522a87ec5339cc3567883f1039378fdb
 - name: github.com/fatih/color
@@ -33,10 +31,11 @@ imports:
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: github.com/wfxiang08/cyutils
-  version: dfb8bc2b5402cb534e3f53cbd9fc3897820f7b07
+  version: 2f66bef634fe739bd45e59bd0d49aaef30637a33
   subpackages:
   - utils
   - utils/atomic2
+  - utils/config
   - utils/errors
   - utils/rolling_log
   - utils/trace

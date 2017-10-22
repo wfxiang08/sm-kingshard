@@ -11,10 +11,10 @@ import (
 // 获取一个Slave? DB的选择很重要
 func (n *Node) GetSlaveConn() (*BackendConn, error) {
 	n.Lock()
-
 	// 获取下一个Slave
 	db, err := n.getNextSlave()
 	n.Unlock()
+
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (n *Node) GetSlaveConn() (*BackendConn, error) {
 	}
 
 	// Down/ManualDown 都是Down吧?
-	if atomic.LoadInt32(&(db.state)) == Down {
+	if atomic.LoadInt32(&(db.state)) != Up {
 		return nil, errors.ErrSlaveDown
 	}
 

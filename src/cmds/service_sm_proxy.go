@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/wfxiang08/cyutils/utils/atomic2"
+	"github.com/wfxiang08/cyutils/utils/http"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
 	"net"
 	"overseer"
-	profile "overseer/server"
 	"proxy/server"
-	"utils"
 	"web"
 )
 
@@ -58,9 +57,9 @@ func main() {
 	}
 
 	if *logLevel != "" {
-		utils.SetLogLevel(*logLevel)
+		log.SetLogLevel(*logLevel)
 	} else {
-		utils.SetLogLevel(cfg.LogLevel)
+		log.SetLogLevel(cfg.LogLevel)
 	}
 
 	var running atomic2.Bool
@@ -68,7 +67,7 @@ func main() {
 
 	// 1. 开启Profile
 	if len(*profileAddr) > 0 {
-		go profile.StartHttpProfile(*profileAddr, running)
+		go http.StartHttpProfile(*profileAddr, running)
 	}
 
 	// 2. 准备addresses

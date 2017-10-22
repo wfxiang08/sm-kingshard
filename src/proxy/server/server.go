@@ -74,7 +74,7 @@ type Server struct {
 	addr     string
 	user     string
 	password string
-	readonly bool
+	readonly bool // 是否在只读模式下工作
 	//db       string
 
 	// 这些是什么逻辑?
