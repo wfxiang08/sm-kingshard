@@ -35,9 +35,9 @@ import (
 func (c *ClientConn) handleQuery(sql string) (err error) {
 	log.Debugf("Query SQL: %s", sql)
 
-	start := time.Now()
+	t0 := time.Now()
 	defer func() {
-		elapsed := time.Now().Sub(start)
+		elapsed := time.Now().Sub(t0)
 		log.Debugf("Elpased: %.3fms, SQL: %s", utils.Nano2MilliDuration(elapsed), sql)
 
 		// 处理panic等错误，防止崩溃
@@ -61,12 +61,13 @@ func (c *ClientConn) handleQuery(sql string) (err error) {
 	// 2. 在Shard之前处理SQL语句
 	hasHandled, err := c.preHandleShard(sql)
 	if err != nil {
-		// log.ErrorErrorf(err, "Server preHandleShard: sql: %s, hasHandled: %t", sql, hasHandled)
 		return err
 	}
 	if hasHandled {
 		return nil
 	}
+
+	//t1 := time.Now()
 
 	// 如果默认的处理方式搞不定，则说明需要进行Sharding处理
 	//解析sql语句,得到的stmt是一个interface
@@ -77,10 +78,17 @@ func (c *ClientConn) handleQuery(sql string) (err error) {
 		return err
 	}
 
+	//t2 := time.Now()
 	// "只读模式"下禁止: Insert, Update, Delete, Replace, Truncate等操作
 	switch v := stmt.(type) {
 	case *sqlparser.Select:
-		return c.handleSelect(v, nil)
+		err = c.handleSelect(v, nil)
+		//t3 := time.Now()
+		// Select Elapsed, pre: 0.023ms, parse: 0.039ms, sel: 2.265ms
+		//log.Printf("Select Elapsed, pre: %.3fms, parse: %.3fms, sel: %.3fms", utils.ElapsedMillSeconds(t0, t1),
+		//	utils.ElapsedMillSeconds(t1, t2),
+		//	utils.ElapsedMillSeconds(t2, t3))
+		return err
 	case *sqlparser.Insert:
 		if c.proxy.readonly {
 			return errors.ErrUpdateDisabled

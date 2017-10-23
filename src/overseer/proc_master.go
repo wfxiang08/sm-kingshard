@@ -223,7 +223,7 @@ func (mp *master) triggerRestart() {
 	select {
 	case <-mp.restarted:
 		//success
-		log.Printf("restart success")
+		// log.Printf("restart success")
 	case <-time.After(mp.TerminateTimeout):
 		//times up mr. process, we did ask nicely!
 		log.Printf("graceful timeout, forcing exit")
@@ -275,9 +275,11 @@ func (mp *master) fork() error {
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("Failed to start slave process: %s", err)
 	}
+
 	//was scheduled to restart, notify success
 	if mp.restarting {
 		mp.restartedAt = time.Now()
+		// 调整状态为restarting = false
 		mp.restarting = false
 		mp.restarted <- true
 	}
@@ -303,23 +305,17 @@ func (mp *master) fork() error {
 			}
 		}
 
-		log.Printf("master exited with %d", code)
+		// 如何等待退出呢?
+		if code != 0 {
+			log.Printf("master exited with %d", code)
+		}
 
-		//if a restarts are disabled or if it was an
-		//unexpected crash, proxy this exit straight
-		//through to the main process
-		if mp.NoRestart || !mp.restarting {
+		// 如果slave异常挂了，那么主进程也不退出
+		if !mp.restarting {
 			os.Exit(code)
 		}
 	case <-mp.descriptorsReleased:
-		// 如果子进程放弃了fd, 那么可以立即Fork一个新的进程?
-		//if descriptors are released, the program
-		//has yielded control of its sockets and
-		//a parallel instance of the program can be
-		//started safely. it should serve state.Listeners
-		//to ensure downtime is kept at <1sec. The previous
-		//cmd.Wait() will still be consumed though the
-		//result will be discarded.
+		log.Printf("Child released descriptors: %d", cmd.Process.Pid)
 	}
 	return nil
 }

@@ -69,7 +69,7 @@ func main() {
 	if len(*logLevel) > 0 {
 		cfg.LogLevel = *logLevel
 	}
-	log.Printf("LogLevel: %s", cfg.LogLevel)
+	// log.Printf("LogLevel: %s", cfg.LogLevel)
 	log.SetLogLevel(cfg.LogLevel)
 
 	var running atomic2.Bool

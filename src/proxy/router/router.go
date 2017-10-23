@@ -193,7 +193,7 @@ func (r *Router) GetRule(db, table string) *Rule {
 		table = strings.Trim(arry[1], "`")
 		db = strings.Trim(arry[0], "`")
 	}
-	log.Debugf("GetRule db: %s, table: %s", db, table)
+	// log.Debugf("GetRule db: %s, table: %s", db, table)
 
 	// 如果没有指定db, 或者db不存在sharding rules, 则返回nil
 	if len(db) == 0 || db != r.ShardDB {
@@ -202,10 +202,10 @@ func (r *Router) GetRule(db, table string) *Rule {
 	}
 
 	if rule, ok := r.Rules[table]; ok {
-		log.Debugf("DB: %s, Table: %s, Rule not null", db, table)
+		// log.Debugf("DB: %s, Table: %s, Rule not null", db, table)
 		return rule
 	} else {
-		log.Debugf("DB: %s, Table: %s, Rule is null", db, table)
+		// log.Debugf("DB: %s, Table: %s, Rule is null", db, table)
 		return nil
 	}
 }

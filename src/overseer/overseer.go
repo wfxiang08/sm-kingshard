@@ -39,9 +39,7 @@ type Config struct {
 	Debug bool
 	//NoWarn disables warning [overseer] logs.
 	NoWarn bool
-	//NoRestart disables all restarts, this option essentially converts
-	//the RestartSignal into a "ShutdownSignal".
-	NoRestart bool // 默认为false, 表示会重启
+
 	Pidfile   string
 }
 

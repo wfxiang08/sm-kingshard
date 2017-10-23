@@ -456,7 +456,7 @@ func (s *Server) onConn(c net.Conn) {
 
 		// 关闭Connection，处理计数器
 		// conn 多次Close不会有副作用
-		conn.Close()
+		conn.Close() // Close()必须得调用
 		s.counter.DecrClientConns()
 		s.activeClients.Done()
 	}()
@@ -723,7 +723,7 @@ func (s *Server) Run() error {
 		conn, err := s.listener.Accept()
 		if err != nil {
 			// 要快退出时，会出现Accept Error(Listener被关闭)
-			log.ErrorErrorf(err, "Accept error")
+			// log.ErrorErrorf(err, "Accept error")
 			break
 		}
 		// 处理单个的Connection(同步Add, 异步Done, 否则在重启的时候不太方面处理边界情况)

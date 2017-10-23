@@ -12,14 +12,14 @@ import (
 )
 
 const (
-	Up = iota
+	Up         = iota
 	Down
 	ManualDown
 	Unknown
 
 	InitConnCount           = 16
 	DefaultMaxConnNum       = 1024
-	PingPeroid        int64 = 4
+	kPingPeroid       int64 = 60 // 1分钟内都认为是可靠的
 )
 
 var dbMap map[string]*DB
@@ -277,19 +277,27 @@ func (db *DB) PopConn() (*Conn, error) {
 	var co *Conn
 	var err error
 
+	// t0 := time.Now()
+
 	// 1. 获取"可联通的"的Conn
 	co, err = db.GetConnFromIdle()
+	// t1 := time.Now()
 	if err != nil {
 		return nil, err
 	}
 
 	// 2. 确保Conn状态可用，例如：事务状态，字符集
-	err = db.tryReuse(co)
+	err = db.tryReuse(co) // Reuse基本上不耗时间
+	// t2 := time.Now()
 	if err != nil {
 		db.closeConn(co)
 		return nil, err
 	}
 
+	// log.Debugf("PopConn elapsed, conn: %.3fms, reuse: %.3fms", utils.ElapsedMillSeconds(t0, t1), utils.ElapsedMillSeconds(t1, t2))
+	//buf := make([]byte, 1<<16)
+	//runtime.Stack(buf, false)
+	//log.Printf("%s", buf)
 	return co, nil
 }
 
@@ -344,19 +352,27 @@ func (db *DB) GetConnFromIdle() (*Conn, error) {
  * 尽可能保证数据可用
  */
 func (db *DB) tryEnsureConn(co *Conn) (*Conn, error) {
-	if co != nil && PingPeroid < time.Now().Unix()-co.pushTimestamp {
+	if co != nil && kPingPeroid < time.Now().Unix()-co.pushTimestamp {
+		//t0 := time.Now()
 		err := co.Ping()
 		if err != nil {
 			// 1. 异常的Conn, 关闭
 			db.closeConn(co)
-
+			//t1 := time.Now()
 			// 2. 重新连接
 			err = co.Connect(db.addr, db.user, db.password, db.DbName)
 			if err != nil {
 				db.closeConn(co)
 				return nil, err
 			}
+			//t2 := time.Now()
+			//log.Debugf("tryEnsureConn elapsed, ping: %.3fms, Conn: %s", utils.ElapsedMillSeconds(t0, t1),
+			//	utils.ElapsedMillSeconds(t1, t2))
 		}
+		//else {
+		//	t1 := time.Now()
+		//	log.Debugf("tryEnsureConn elapsed, ping: %.3fms", utils.ElapsedMillSeconds(t0, t1))
+		//}
 	}
 
 	// 直接认为当前的co是可用的，最坏情况是以连接失败结果返回给用户

@@ -61,8 +61,9 @@ func (l *overseerListener) Accept() (net.Conn, error) {
 		//connection watcher
 		select {
 		case <-l.closeByForce:
-			// 异步等待关闭: 手动强制关闭 或者 其他关闭方式
-			// (close也会导致 <-l.closeByForce 返回)
+			// listener会整体控制所有的clients
+			// 关闭 closeByForce 之后，所有的 <-l.closeByForce 都会返回, 然后所有的uconn都会强制关闭
+			// Conn还有其他正常关闭的渠道吗?
 			uconn.Close()
 		case <-uconn.closed:
 			//closed manually
@@ -91,8 +92,10 @@ func (l *overseerListener) release(timeout time.Duration) {
 	go func() {
 		select {
 		case <-time.After(timeout):
+			// timeout 强制退出
 			close(l.closeByForce)
 		case <-waited:
+			// 等待 clients 都正常退出，也就是: l.wg.Wait()返回
 			//no need to force close
 		}
 	}()
@@ -123,6 +126,7 @@ type overseerConn struct {
 	closed chan bool
 }
 
+// 外接主动调用关闭
 func (o overseerConn) Close() error {
 	err := o.Conn.Close()
 	if err == nil {

@@ -24,6 +24,8 @@ import (
 	"sqlparser"
 	"strconv"
 	"strings"
+	"time"
+	"utils"
 )
 
 const (
@@ -57,6 +59,9 @@ func (c *ClientConn) handleFieldList(data []byte) error {
 		return mysql.NewDefaultError(mysql.ER_BAD_DB_ERROR, "Current DB empty")
 	}
 
+	// log.Printf("handleFieldList for %s@%s", table, c.CurrentDB)
+	// mysql -uxxx -hxxx -Pxxx 执行完毕show tables之后似乎会执行这个查询(每个表都执行一次)
+	// 第一次连接时会这样
 	// 使用第一个Node来获取状态
 	n := c.schema.GetNode(c.CurrentDB, true)
 	if n == nil {
@@ -109,12 +114,14 @@ func (c *ClientConn) writeFieldList(status uint16, fs []*mysql.Field) error {
 //处理select语句
 func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) error {
 	// 1. 处理Sharding模式下的select
+	t0 := time.Now()
 	var fromSlave bool = true
 	plan, err := c.schema.Router.BuildPlan(c.CurrentDB, stmt)
 	if err != nil {
 		return err
 	}
 
+	t1 := time.Now()
 	// 2. 识别comment
 	//    /*master*/
 	if 0 < len(stmt.Comments) {
@@ -125,7 +132,10 @@ func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) er
 	}
 
 	// 获取多个conns
+	// 控制ping的频率
 	conns, err := c.getShardConns(fromSlave, plan)
+
+	t2 := time.Now()
 
 	if err != nil {
 		log.ErrorErrorf(err, "ClientConn handleSelect connectionId: %d", c.connectionId)
@@ -139,8 +149,10 @@ func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) er
 	}
 
 	var rs []*mysql.Result
+	// 耗时不可控
 	rs, err = c.executeInMultiNodes(conns, plan.RewrittenSqls, args)
 	c.closeShardConns(conns, false)
+	t3 := time.Now()
 	if err != nil {
 		log.ErrorErrorf(err, "ClientConn handleSelect: %d", c.connectionId)
 		return err
@@ -151,7 +163,13 @@ func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) er
 	if err != nil {
 		log.ErrorErrorf(err, "ClientConn handleSelect: %d", c.connectionId)
 	}
+	t4 := time.Now()
 
+	log.Debugf("Select Elapsed, plan: %.3fms, conns: %.3fms, exec: %.3fms, merge: %.3fms",
+		utils.ElapsedMillSeconds(t0, t1),
+		utils.ElapsedMillSeconds(t1, t2),
+		utils.ElapsedMillSeconds(t2, t3),
+		utils.ElapsedMillSeconds(t3, t4))
 	return err
 }
 

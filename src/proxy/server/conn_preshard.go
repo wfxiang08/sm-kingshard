@@ -90,7 +90,7 @@ func (c *ClientConn) preHandleShard(sql string) (bool, error) {
 
 	// need shard sql
 	if executeDB == nil {
-		log.Debugf("Need shard sql")
+		// log.Debugf("Need shard sql")
 		return false, nil
 	} else {
 		log.Debugf("Execute sql in node: %s", executeDB.ExecNode.Master.Addr())
@@ -148,7 +148,7 @@ func (c *ClientConn) handleShowDatabases(resultSet *mysql.Resultset, f []*mysql.
 	}
 	databases = append(databases, c.schema.ShardDB)
 
-	log.Debugf("Databases: %s", strings.Join(databases, ", "))
+	// log.Debugf("Databases: %s", strings.Join(databases, ", "))
 	sort.Sort(StringArray(databases))
 
 	// 3. 按照MySQL协议格式化show databases的结果
@@ -560,6 +560,20 @@ func (c *ClientConn) getShowExecDB(sql string, tokens []string, tokensLen int) (
 	executeDB := new(ExecuteDB)
 	executeDB.IsSlave = true
 	executeDB.sql = sql
+
+	// executeDB.ExecNode
+	sqlLower := strings.ToLower(sql)
+	if strings.Compare(sqlLower, "show tables") == 0 {
+		// 得先选择 database, 然后再执行 show tables
+		if len(c.CurrentDB) == 0 {
+			return nil, errors.ErrDatabaseNotSelected
+		} else {
+			executeDB.ExecNode = c.schema.GetNode(c.CurrentDB, true)
+		}
+		log.Printf("CurrentDB: %s, ExecNode: %v", c.CurrentDB, executeDB.ExecNode)
+		// 直接返回
+		return executeDB, nil
+	}
 
 	//handle show columns/fields
 	err := c.handleShowColumns(sql, tokens, tokensLen, executeDB)
