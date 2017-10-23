@@ -33,7 +33,7 @@ import (
 
 /*处理query语句*/
 func (c *ClientConn) handleQuery(sql string) (err error) {
-	log.Debugf("Query SQL: %s", sql)
+	// log.Debugf("Query SQL: %s", sql)
 
 	t0 := time.Now()
 	defer func() {
@@ -190,15 +190,25 @@ func (c *ClientConn) getBackendConn(n *backend.Node, fromSlave bool) (co *backen
 	if len(n.Cfg.DBName) > 0 {
 		db = n.Cfg.DBName
 	}
+
+	t0 := time.Now()
+
+	// UseDB比较耗费时间
 	if err = co.UseDB(db); err != nil {
 		log.ErrorErrorf(err, "Use DB for db: %s failed", db)
 		return
 	}
 
+	t1 := time.Now()
 	// 设置字符集
 	if err = co.SetCharset(c.charset, c.collation); err != nil {
 		return
 	}
+
+	t2 := time.Now()
+	log.Debugf("getBackendConn useDB: %.3fms, Charset: %.3fms",
+		utils.ElapsedMillSeconds(t0, t1),
+		utils.ElapsedMillSeconds(t1, t2))
 
 	return
 }
@@ -210,6 +220,7 @@ func (c *ClientConn) GetNormalizedDB(db string, n *backend.Node, tableIndex int)
 
 //获取shard的conn，第一个参数表示是不是select
 func (c *ClientConn) getShardConns(fromSlave bool, plan *router.Plan) (map[string]*backend.BackendConn, error) {
+	//t0 := time.Now()
 	var err error
 	if plan == nil || len(plan.RouteNodeIndexs) == 0 {
 		return nil, errors.ErrNoRouteNode
@@ -234,6 +245,7 @@ func (c *ClientConn) getShardConns(fromSlave bool, plan *router.Plan) (map[strin
 		}
 	}
 
+	//t1 := time.Now()
 	conns := make(map[string]*backend.BackendConn)
 	var co *backend.BackendConn
 	for _, n := range nodes {
@@ -245,6 +257,8 @@ func (c *ClientConn) getShardConns(fromSlave bool, plan *router.Plan) (map[strin
 
 		conns[n.Cfg.Name] = co
 	}
+	//t2 := time.Now()
+	//log.Debugf("getShardConns t01: %.3fms, t12: %.3fms", utils.ElapsedMillSeconds(t0, t1), utils.ElapsedMillSeconds(t1, t2))
 
 	return conns, err
 }

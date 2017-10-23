@@ -105,6 +105,25 @@ func (c *ClientConn) handleSetAutoCommit(val sqlparser.ValExpr) error {
 	return c.writeOK(nil)
 }
 
+// golang mysql driver的实现
+//// Handles parameters set in DSN after the connection is established
+//func (mc *mysqlConn) handleParams() (err error) {
+//	for param, val := range mc.cfg.Params {
+//		switch param {
+//		// Charset
+//		case "charset":
+//			charsets := strings.Split(val, ",")
+//			for i := range charsets {
+//				// ignore errors here - a charset may not exist
+//				err = mc.exec("SET NAMES " + charsets[i])
+//				if err == nil {
+//					break
+//				}
+//			}
+//			if err != nil {
+//				return
+//			}
+
 func (c *ClientConn) handleSetNames(ch, ci sqlparser.ValExpr) error {
 	var cid mysql.CollationId
 	var ok bool
@@ -112,10 +131,13 @@ func (c *ClientConn) handleSetNames(ch, ci sqlparser.ValExpr) error {
 	value := sqlparser.String(ch)
 	value = strings.Trim(value, "'`\"")
 
+	// 如何处理charset呢?
 	charset := strings.ToLower(value)
 	if charset == "null" {
 		return c.writeOK(nil)
 	}
+
+	// 一般情况下都不会指定ci, 因为不知道如何指定
 	if ci == nil {
 		if charset == "default" {
 			charset = mysql.DEFAULT_CHARSET

@@ -147,6 +147,9 @@ func (sp *slave) watchSignal() {
 		log.Printf("Child quit SIGUSR1 from [%d] to [%d]", os.Getpid(), sp.masterProc.Pid)
 		sp.masterProc.Signal(SIGUSR1)
 
+		// 接下来的1s左右, Slave还会继续工作，等待新的Slave的checkMaster等函数调用完毕
+		time.Sleep(time.Second)
+
 		// 通知完毕，自己在慢慢善后
 		if len(sp.listeners) > 0 {
 			// 释放listeners, 然后准备退出

@@ -6,28 +6,20 @@ import (
 	"time"
 
 	"core/errors"
-	"fmt"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
 	"mysql"
 )
 
 const (
-	Up         = iota
+	Up = iota
 	Down
 	ManualDown
 	Unknown
 
 	InitConnCount           = 16
 	DefaultMaxConnNum       = 1024
-	kPingPeroid       int64 = 60 // 1分钟内都认为是可靠的
+	kPingPeroid       int64 = 60 * 5 // 5分钟内都认为是可靠的(还有checkMaster/checkSlave会及时发现问题）
 )
-
-var dbMap map[string]*DB
-var dbMutex sync.Mutex
-
-func init() {
-	dbMap = make(map[string]*DB)
-}
 
 // DB和golang DB比较类似，后端维持一个连接池
 // 两个概念：
@@ -77,13 +69,6 @@ func Open(addr string, user string, password string, dbName string, maxConnNum i
 	// DB复用的基础, DB的默认的DbName没有实际作用, 因为下面的代码保证了DbName始终和预期一致
 	// ClientConn#getBackendConn
 	//
-	key := fmt.Sprintf("%s:%s", addr, user)
-	dbMutex.Lock()
-	defer dbMutex.Unlock()
-
-	if db, ok := dbMap[key]; ok {
-		return db, nil
-	}
 
 	db := new(DB)
 	db.addr = addr
@@ -126,8 +111,6 @@ func Open(addr string, user string, password string, dbName string, maxConnNum i
 	}
 	db.SetLastPing()
 
-	// 设置缓存: 同一个Key不重复创建DB
-	dbMap[key] = db
 	return db, nil
 }
 
@@ -176,9 +159,6 @@ func (db *DB) Close() error {
 // 通过 checkConn 来专门实现ping的需求
 //
 func (db *DB) Ping() error {
-
-	db.pingMutex.Lock()
-	defer db.pingMutex.Unlock()
 
 	// 如果最近1s内检查过，则直接返回上次的结果
 	if time.Now().Sub(db.lastChecked) < time.Second {
@@ -262,6 +242,7 @@ func (db *DB) tryReuse(co *Conn) error {
 	}
 
 	// DEFAULT_CHARSET 必须在配置文件中设置
+	// 每次初始化时都复原成为: DEFAULT_CHARSET, 我们一般使用utf8mb4
 	if co.GetCharset() != mysql.DEFAULT_CHARSET {
 		err = co.SetCharset(mysql.DEFAULT_CHARSET, mysql.DEFAULT_COLLATION_ID)
 		if err != nil {

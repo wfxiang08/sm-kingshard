@@ -5,15 +5,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	log "github.com/wfxiang08/cyutils/utils/rolling_log"
+	"mysql"
 	"net"
 	"strings"
-	"time"
-
-	"mysql"
-)
-
-var (
-	pingPeriod = int64(time.Second * 16)
 )
 
 //
@@ -49,13 +44,17 @@ func (c *Conn) Connect(addr string, user string, password string, db string) err
 	c.addr = addr
 	c.user = user
 	c.password = password
-	c.CurrentDB = db
+	c.CurrentDB = db // 这个一般不会改变
 
 	// 可以通过Config文件的charset来修改
 	c.collation = mysql.DEFAULT_COLLATION_ID
 	c.charset = mysql.DEFAULT_CHARSET
 
-	return c.ReConnect()
+	//t0 := time.Now()
+	err := c.ReConnect()
+	//t1 := time.Now()
+	// log.Debugf("Connect address: %s elapsed: %.3fms, DB: %s", addr, utils.ElapsedMillSeconds(t0, t1), db)
+	return err
 }
 
 func (c *Conn) ReConnect() error {
@@ -359,7 +358,8 @@ func (c *Conn) Ping() error {
 
 // 建立连接之后选择 database
 func (c *Conn) UseDB(dbName string) error {
-	// fmt.Printf("UserDB: %s\n", dbName)
+	// log.Printf("CurrentDB: %s vs. NewDB: %s", c.CurrentDB, dbName)
+	// 为了保证时间效率，Conn的DB最好保持不变；不要再底层为不同的DB复用Connection
 	if c.CurrentDB == dbName || len(dbName) == 0 {
 		return nil
 	}
@@ -441,6 +441,11 @@ func (c *Conn) SetAutoCommit(n uint8) error {
 // 重置字符集合
 func (c *Conn) SetCharset(charset string, collation mysql.CollationId) error {
 	charset = strings.Trim(charset, "\"'`")
+	if charset == "utf8" && c.charset == "utf8mb4" {
+		// 如果客户端使用utf8, proxy为utf8mb4, 那么以proxy为准(反正utf8mb4是一个mysql上的概念，对php, go等没有影响）
+		// 反过来则由危险，客户端期待utfmb4, 而proxy只实现utf8, 则会出现问题
+		return nil
+	}
 
 	if collation == 0 {
 		collation = mysql.CollationNames[mysql.Charsets[charset]]
@@ -449,6 +454,8 @@ func (c *Conn) SetCharset(charset string, collation mysql.CollationId) error {
 	if c.charset == charset && c.collation == collation {
 		return nil
 	}
+
+	log.Debugf("Charset not match: %s vs. (client)%s, id: %d vs. %d", c.charset, charset)
 
 	_, ok := mysql.CharsetIds[charset]
 	if !ok {

@@ -24,8 +24,6 @@ import (
 	"sqlparser"
 	"strconv"
 	"strings"
-	"time"
-	"utils"
 )
 
 const (
@@ -114,14 +112,14 @@ func (c *ClientConn) writeFieldList(status uint16, fs []*mysql.Field) error {
 //处理select语句
 func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) error {
 	// 1. 处理Sharding模式下的select
-	t0 := time.Now()
+	//t0 := time.Now()
 	var fromSlave bool = true
 	plan, err := c.schema.Router.BuildPlan(c.CurrentDB, stmt)
 	if err != nil {
 		return err
 	}
 
-	t1 := time.Now()
+	//t1 := time.Now()
 	// 2. 识别comment
 	//    /*master*/
 	if 0 < len(stmt.Comments) {
@@ -135,7 +133,7 @@ func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) er
 	// 控制ping的频率
 	conns, err := c.getShardConns(fromSlave, plan)
 
-	t2 := time.Now()
+	//t2 := time.Now()
 
 	if err != nil {
 		log.ErrorErrorf(err, "ClientConn handleSelect connectionId: %d", c.connectionId)
@@ -152,7 +150,7 @@ func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) er
 	// 耗时不可控
 	rs, err = c.executeInMultiNodes(conns, plan.RewrittenSqls, args)
 	c.closeShardConns(conns, false)
-	t3 := time.Now()
+	//t3 := time.Now()
 	if err != nil {
 		log.ErrorErrorf(err, "ClientConn handleSelect: %d", c.connectionId)
 		return err
@@ -163,13 +161,13 @@ func (c *ClientConn) handleSelect(stmt *sqlparser.Select, args []interface{}) er
 	if err != nil {
 		log.ErrorErrorf(err, "ClientConn handleSelect: %d", c.connectionId)
 	}
-	t4 := time.Now()
+	//t4 := time.Now()
 
-	log.Debugf("Select Elapsed, plan: %.3fms, conns: %.3fms, exec: %.3fms, merge: %.3fms",
-		utils.ElapsedMillSeconds(t0, t1),
-		utils.ElapsedMillSeconds(t1, t2),
-		utils.ElapsedMillSeconds(t2, t3),
-		utils.ElapsedMillSeconds(t3, t4))
+	//log.Debugf("Select Elapsed, plan: %.3fms, conns: %.3fms, exec: %.3fms, merge: %.3fms",
+	//	utils.ElapsedMillSeconds(t0, t1),
+	//	utils.ElapsedMillSeconds(t1, t2),
+	//	utils.ElapsedMillSeconds(t2, t3),
+	//	utils.ElapsedMillSeconds(t3, t4))
 	return err
 }
 

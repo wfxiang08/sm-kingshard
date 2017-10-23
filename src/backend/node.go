@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	Master      = "master"
-	Slave       = "slave"
-	SlaveSplit  = ","
+	Master     = "master"
+	Slave      = "slave"
+	SlaveSplit = ","
 )
 
 // Node是什么概念呢?
@@ -87,14 +87,15 @@ func (n *Node) checkMaster() {
 		db.SetLastPing()
 		if atomic.LoadInt32(&(db.state)) != ManualDown {
 			atomic.StoreInt32(&(db.state), Up)
-			raven.CaptureMessage(fmt.Sprintf("Master is up: %s", db.addr), nil)
+			// raven.CaptureMessage(fmt.Sprintf("Master is up: %s", db.addr), nil)
 		}
 	}
 }
 
 func (n *Node) OpenDB(addr string) (*DB, error) {
 	// 注意初始的配置
-	db, err := Open(addr, n.Cfg.User, n.Cfg.Password, "", n.Cfg.MaxConnNum)
+	// 最好指定初始的DB, 减少useDB的次数
+	db, err := Open(addr, n.Cfg.User, n.Cfg.Password, n.Cfg.DBName, n.Cfg.MaxConnNum)
 	return db, err
 }
 

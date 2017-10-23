@@ -71,7 +71,7 @@ func (n *Node) checkSlave() {
 			slaves[checkedIndex].SetLastPing()
 
 			if atomic.LoadInt32(&(slaves[checkedIndex].state)) != ManualDown {
-				raven.CaptureMessage(fmt.Sprintf("Slave is up: %s", slaves[checkedIndex].addr), nil)
+				// raven.CaptureMessage(fmt.Sprintf("Slave is up: %s", slaves[checkedIndex].addr), nil)
 				atomic.StoreInt32(&(slaves[checkedIndex].state), Up)
 				checkedIndex++
 			} else {

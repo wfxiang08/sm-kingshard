@@ -342,6 +342,10 @@ func NewServer(cfg *config.Config, listener net.Listener) (*Server, error) {
 	mysql.DEFAULT_COLLATION_ID = cid
 	mysql.DEFAULT_COLLATION_NAME = mysql.Collations[cid]
 
+	// 打印字符集设置
+	log.Printf("MySQL Default, charset: %s, collation_id: %d, CollationName: %s", mysql.DEFAULT_CHARSET, mysql.DEFAULT_COLLATION_ID,
+		mysql.DEFAULT_COLLATION_NAME)
+
 	if err := s.parseBlackListSqls(); err != nil {
 		return nil, err
 	}
