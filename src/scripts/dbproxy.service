@@ -3,9 +3,9 @@ Description=SMProxy Service
 After=network.target
 
 [Service]
-Environment="CONFIG=/usr/local/db/sm_readonly.yaml" "PIDFILE=/data/tmp_db/smproxy.pid"
-WorkingDirectory=/usr/local/db/
-ExecStart=/usr/local/db/service_sm_proxy -config $CONFIG  -log-path /data/logs/service.log -log-level=debug -pidfile $PIDFILE
+Environment="CONFIG=/usr/local/service/dbproxy/sm_readonly.yaml" "PIDFILE=/usr/local/service/dbproxy/smproxy.pid"
+WorkingDirectory=/usr/local/service/dbproxy/
+ExecStart=/usr/local/service/dbproxy/service_sm_proxy -config $CONFIG  -log-path /data/logs/service.log -log-level=debug -pidfile $PIDFILE
 
 Restart=always
 

@@ -1,9 +1,7 @@
-#!/bin/bash
-
 #!/usr/bin/env bash
-CONFIG=/usr/local/db/sm_readonly.yaml
-PIDFILE=/data/tmp_db/dbproxy.pid
-CMD="nohup /usr/local/db/service_kingshard -config $CONFIG  -log-path /data/tmp_db/service.log -log-level=debug -pidfile $PIDFILE &> /data/tmp_db/stdout.log &"
+CONFIG=/usr/local/service/dbproxy/sm_readonly.yaml
+PIDFILE=/usr/local/service/dbproxy/dbproxy.pid
+CMD="nohup /usr/local/service/dbproxy/service_sm_proxy -config $CONFIG  -log-path /data/logs/proxy_service.log -log-level=debug -pidfile $PIDFILE &> /data/logs/proxy_stdout.log &"
 app=dbproxy
 
 function check_pid() {
