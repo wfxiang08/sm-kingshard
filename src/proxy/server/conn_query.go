@@ -206,9 +206,11 @@ func (c *ClientConn) getBackendConn(n *backend.Node, fromSlave bool) (co *backen
 	}
 
 	t2 := time.Now()
-	log.Debugf("getBackendConn useDB: %.3fms, Charset: %.3fms",
-		utils.ElapsedMillSeconds(t0, t1),
-		utils.ElapsedMillSeconds(t1, t2))
+	e1 := utils.ElapsedMillSeconds(t0, t1)
+	e2 := utils.ElapsedMillSeconds(t1, t2)
+	if e1 > 1.0 || e2 > 1.0 {
+		log.Debugf("getBackendConn useDB: %.3fms, Charset: %.3fms", e1, e2)
+	}
 
 	return
 }
