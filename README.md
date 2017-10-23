@@ -30,10 +30,6 @@ pidof service_sm_prox
 # 新的请求交给新的进程，旧的请求在旧的进程中处理，直到所有的旧的请求处理完毕才推出或者10s后强制退出
 kill -USR2 `pidof service_sm_prox`
 
-# 如果旧的请求不退出，查看到底谁在使用当前的Proxy
-kill -USR1 `pidof service_sm_prox`
-kill -USR1 `pidof service_sm_prox` && tail -n 10  /data/logs/service.log-`date +"%Y%m%d"`
-
 Golang中定义的Signal和Linux的Signal不太一样，不要通过数字来代替 USR1, USR2
 
 ```
@@ -52,46 +48,3 @@ mysql -u root -pxxx -P9900 -h172.1.2.12  shard_sm
 * golang中推荐使用:
   * user:password@tcp(db.hostname:3306)/db_name?charset=utf8mb4,utf8&interpolateParams=true&parseTime=True&loc=UTC
   * interpolateParams=true, 表示不直接使用prepared statement
-
-## 配置文件
-
-```
-addr : 0.0.0.0:9696
-
-user :  kingshard
-password : kingshard
-
-web_addr : 0.0.0.0:9601
-web_user : root
-web_password : zzz
-
-# debug info
-log_level : debug
-log_sql: on
-# 20ms以上算慢请求
-slow_log_time: 20
-allow_ips : 127.0.0.1,192.168.0.14
-nodes :
--
-    name : node1
-    db_name: kingshard_test
-    max_conns_limit : 32
-    user :  root
-    password :
-    master : 127.0.0.1:3306
-    down_after_noalive : 32
-
-# schema defines sharding rules, the db is the sharding table database.
-schema :
-    nodes: [node1]
-    default: node1
-    shard:
-    -
-        db : db_test
-        table: recording
-        keys: [id]
-        # nodes为空，则和schema的nodes一致，locations为空，则表示[1, 1, 1 ...] 长度和nodes一致
-        nodes: []
-        type: sm
-        locations: []
-```
