@@ -5,7 +5,7 @@ import:
   - engine/standard
   - middleware
 - package: github.com/wfxiang08/cyutils
-  version: 2f66bef634fe739bd45e59bd0d49aaef30637a33
+  version: a1e100462898931f081803bb601b083ce9cee60b
   subpackages:
   - utils
   - utils/rolling_log

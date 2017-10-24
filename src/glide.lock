@@ -1,5 +1,5 @@
-hash: 6c19f9fda421a914b4c28929d87033ec9ac5bfb873ca77630c992b2c5f124eab
-updated: 2017-10-22T10:20:51.253190539+08:00
+hash: a45f1320282a2de379c6199dd8cb5a2d4919c7df8ad7dc2c68179f6f96e4f2ec
+updated: 2017-10-25T07:49:09.053601711+08:00
 imports:
 - name: github.com/certifi/gocertifi
   version: 3fd9e1adb12b72d2f3f82191d49be9b93c69f67c
@@ -35,7 +35,7 @@ imports:
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: github.com/wfxiang08/cyutils
-  version: 2f66bef634fe739bd45e59bd0d49aaef30637a33
+  version: a1e100462898931f081803bb601b083ce9cee60b
   subpackages:
   - utils
   - utils/atomic2
@@ -45,7 +45,7 @@ imports:
   - utils/rolling_log
   - utils/trace
 - name: golang.org/x/net
-  version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
+  version: 242b6b35177ec3909636b6cf6a47e8c2c6324b5d
   subpackages:
   - context
 - name: golang.org/x/sys

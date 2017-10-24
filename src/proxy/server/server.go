@@ -20,7 +20,7 @@ import (
 	"mysql"
 	"proxy/router"
 	"sync"
-	"utils"
+	"github.com/wfxiang08/cyutils/utils"
 )
 
 //

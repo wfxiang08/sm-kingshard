@@ -21,8 +21,8 @@ import (
 	mw "github.com/labstack/echo/middleware"
 	"github.com/wfxiang08/cyutils/utils/rolling_log"
 	"net"
-	"overseer"
 	"proxy/server"
+	"github.com/wfxiang08/cyutils/overseer"
 )
 
 type ApiServer struct {

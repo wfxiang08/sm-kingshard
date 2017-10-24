@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/getsentry/raven-go"
+	"github.com/wfxiang08/cyutils/overseer"
 	"github.com/wfxiang08/cyutils/utils/atomic2"
 	"github.com/wfxiang08/cyutils/utils/http"
 	log "github.com/wfxiang08/cyutils/utils/rolling_log"
 	"net"
-	"overseer"
 	"proxy/server"
 	"web"
 )

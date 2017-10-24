@@ -28,7 +28,7 @@ import (
 	"mysql"
 	"proxy/router"
 	"sqlparser"
-	"utils"
+	"github.com/wfxiang08/cyutils/utils"
 )
 
 /*处理query语句*/
