@@ -145,12 +145,21 @@ func (s *HashShard) FindForKey(key interface{}) (int, error) {
 
 // 我们自定义的Sharding算法
 type SMHashShard struct {
-	ShardNum int
+	ShardNum    int
+	LocationNum uint64
 }
 
 func (s *SMHashShard) FindForKey(key interface{}) (int, error) {
 	h := HashValue(key)
-	return int((h>>48)&((1<<12)-1)) % s.ShardNum, nil
+	smShardNum := int((h>>48)&((1<<12)-1)) % s.ShardNum
+	if s.LocationNum < 2 {
+		return smShardNum, nil
+	} else {
+		// tb0, ..., tbN-1    ---> shard0
+		// tbN, ..., tb2N - 1 ---> shard1
+		//
+		return smShardNum*int(s.LocationNum) + int(h%uint64(s.LocationNum)), nil
+	}
 }
 func SMShard(h uint64) int {
 	return int((h >> 48) & ((1 << 12) - 1))

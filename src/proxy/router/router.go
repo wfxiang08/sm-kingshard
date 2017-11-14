@@ -24,16 +24,16 @@ import (
 )
 
 var (
-	DefaultRuleType = "default"
-	HashRuleType = "hash"
-	SMRuleType = "sm"
-	RangeRuleType = "range"
-	DateYearRuleType = "date_year"
+	DefaultRuleType   = "default"
+	HashRuleType      = "hash"
+	SMRuleType        = "sm"
+	RangeRuleType     = "range"
+	DateYearRuleType  = "date_year"
 	DateMonthRuleType = "date_month"
-	DateDayRuleType = "date_day"
+	DateDayRuleType   = "date_day"
 	MinMonthDaysCount = 28
 	MaxMonthDaysCount = 31
-	MonthsCount = 12
+	MonthsCount       = 12
 )
 
 //-
@@ -48,13 +48,13 @@ var (
 // 定义了Proxy的路由规则， 例如：<DB, Table> --> <Key, Type, Nodes等信息>
 //
 type Rule struct {
-	Table              string
-	Keys               []string    // 允许指定多个Keys, 只有Keys[0]是主键，其他的Keys和Keys[0]具有相同的Sharding规则
+	Table string
+	Keys  []string // 允许指定多个Keys, 只有Keys[0]是主键，其他的Keys和Keys[0]具有相同的Sharding规则
 
-	Type               string      // Rule的类型
-	Nodes              []string
-                                   // 所有的子表的Index
-                                   // TableToNode 每个子表对应的Node的index
+	Type  string // Rule的类型
+	Nodes []string
+	// 所有的子表的Index
+	// TableToNode 每个子表对应的Node的index
 	SubTableIndexs     []int       //SubTableIndexs store all the index of sharding sub-table
 	TableToNode        map[int]int //key is table index, and value is node index
 	Shard              Shard       // 如何分Shard呢?
@@ -157,6 +157,14 @@ func NewRouter(schemaConfig *config.SchemaConfig) (*Router, error) {
 			for i := 0; i < shardLocLen; i++ {
 				shard.Locations[i] = 1
 			}
+		} else {
+			// 所有的location的长度必须相同
+			shardLocLen := len(shard.Locations)
+			for i := 1; i < shardLocLen; i++ {
+				if (shard.Locations[i] != shard.Locations[0]) {
+					return nil, fmt.Errorf("all locations should be the same")
+				}
+			}
 		}
 
 		// log.Debugf("Nodes: %v", shard.Nodes)
@@ -236,9 +244,9 @@ func parseRule(cfg *config.ShardConfig) (*Rule, error) {
 			// 存在这么多个分表
 			for j := 0; j < cfg.Locations[i]; j++ {
 				// 子表索引，例如: 0, 1, 2, 3, 4, ..., 11
-				r.SubTableIndexs = append(r.SubTableIndexs, j + sumTables)
+				r.SubTableIndexs = append(r.SubTableIndexs, j+sumTables)
 				// 不同的Table所归属的Node可能不一样
-				r.TableToNode[j + sumTables] = i
+				r.TableToNode[j+sumTables] = i
 			}
 			sumTables += cfg.Locations[i]
 			if cfg.Locations[i] != 1 {
@@ -307,7 +315,11 @@ func parseShard(r *Rule, cfg *config.ShardConfig) error {
 		r.Shard = &HashShard{ShardNum: len(r.TableToNode)}
 	case SMRuleType:
 		// 我们自己的Sharding算法
-		r.Shard = &SMHashShard{ShardNum: len(r.TableToNode)}
+		locationNum := 0
+		if len(cfg.Locations) > 0 {
+			locationNum = cfg.Locations[0]
+		}
+		r.Shard = &SMHashShard{ShardNum: len(r.TableToNode), LocationNum: uint64(locationNum)}
 	case RangeRuleType:
 		rs, err := ParseNumSharding(cfg.Locations, cfg.TableRowLimit)
 		if err != nil {
